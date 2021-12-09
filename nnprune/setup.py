@@ -1,0 +1,45 @@
+from setuptools import setup, find_packages
+
+VERSION = '1.0.0' 
+DESCRIPTION = 'Data-free robustness preserving neural network pruning'
+
+with open("README.md", "r", encoding="utf-8") as fh:
+    LONG_DESCRIPTION = fh.read()
+
+# Setting up
+setup(
+       # the name must match the folder name 'nnprune'
+        name="nnprune", 
+        version=VERSION,
+        author="Mark H. Meng",
+        author_email="<menghs@i2r.a-star.edu.sg>",
+        description=DESCRIPTION,
+        long_description=LONG_DESCRIPTION,
+        long_description_content_type="text/markdown",
+        url="https://github.com/pypa/sampleproject", # To be filled later
+        project_urls={ # To be filled later
+            "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
+        },
+        
+        packages=find_packages(),
+        install_requires=[
+            'tensorflow==2.3.0',
+            'tensorflow-model-optimization',
+            'matplotlib',
+            'scikit-learn',
+            'pandas',
+            'progressbar2',
+            'seaborn>=0.11.1',
+            'opencv-python>=4.5'
+        ], 
+        
+        keywords=['python', 'neural network pruning'],
+        classifiers= [
+            "Development Status :: 3 - Alpha",
+            "Intended Audience :: Education",
+            "Programming Language :: Python :: 2",
+            "Programming Language :: Python :: 3",
+            "Operating System :: MacOS :: MacOS X",
+            "Operating System :: Microsoft :: Windows",
+        ]
+)
