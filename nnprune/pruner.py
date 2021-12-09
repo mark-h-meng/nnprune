@@ -46,7 +46,8 @@ class Pruner:
     robustness_evaluator = None
     model_path = None
     test_set = None
-
+    BENCHMARKING_MODE = False
+    
     def __init__(self, path, test_set, alpha=0.75):
         """Initializes `Loss` class.
         Args:
@@ -72,13 +73,12 @@ class Pruner:
         self.TARGET_ADV_EPSILONS = [0.5]
         self.POOLING_MULTIPLIER = 2
         self.TARGET_PRUNING_PERCENTAGE = 0.8
-        self.BATCH_SIZE_PER_EVALUATION = 100
+        self.BATCH_SIZE_PER_EVALUATION = 25
 
         self.TRAIN_BIGGER_MODEL = True
 
         # Specify the mode of pruning
         self.BASELINE_MODE = False
-        self.BENCHMARKING_MODE = False
 
         # Recursive mode
         # PS: Baseline should is written in non-recursive mode
@@ -103,7 +103,7 @@ class Pruner:
     def save_model(self, path):
         if os.path.exists(path):
             shutil.rmtree(path)
-            print("Removed existing pruned model ...")
+            print("Overwriting existing pruned model ...")
 
         self.model.save(path)
         print(" >>> Pruned model saved")
@@ -119,7 +119,11 @@ class Pruner:
         print("Robustness evaluation accomplished")
 
 
-    def prune(self, benchmarking=False):
+    def prune(self, evaluate=False):
+        if evaluate:
+            self.BENCHMARKING_MODE = False
+        else:
+            self.BENCHMARKING_MODE = True
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("nnprune/logs/")
         utils.create_dir_if_not_exist("nnprune/save_figs/")
@@ -271,7 +275,7 @@ class Pruner:
 
                 if os.path.exists(curr_pruned_model_path):
                     shutil.rmtree(curr_pruned_model_path)
-                print("Removed existing pruned model ...")
+                print("Overwriting existing pruned model ...")
 
                 model.save(curr_pruned_model_path)
                 print(" >>> Pruned model saved")
@@ -289,7 +293,7 @@ class Pruner:
         timestamp = time.strftime('%b-%d-%H%M', local_time)
 
 
-        tape_filename = "tf_codes/logs/chest-" + timestamp + "-" + str(self.BATCH_SIZE_PER_EVALUATION)
+        tape_filename = "nnprune/logs/chest-" + timestamp + "-" + str(self.BATCH_SIZE_PER_EVALUATION)
         if self.BENCHMARKING_MODE:
             tape_filename = tape_filename+"-BENCHMARK"
 
@@ -316,7 +320,6 @@ class Pruner:
             
             if self.BENCHMARKING_MODE:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
-
 
         print("Pruning accomplished")
  

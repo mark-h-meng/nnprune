@@ -23,18 +23,15 @@ def test_pruner():
 def test_chest_xray_model():
     print(os.path.dirname(os.path.realpath(__file__)))
    
+    original_model_path = 'nnprune/models/chest_xray_cnn'
+    pruned_model_path = 'nnprune/models/chest_xray_cnn_pruned'
 
-    original_model_path = 'models/chest_xray_cnn'
-    pruned_model_path = 'models/chest_xray_cnn_pruned'
-
-
-        ################################################################
-        # Prepare dataset and pre-trained model                        #
-        ################################################################
-        # The Kaggle chest x-ray dataset contains 2 classes 150x150 (we change to 64x64) color images.
-
-    class_names = ['PNEUMONIA', 'NORMAL']
-
+    ################################################################
+    # Prepare dataset and pre-trained model                        #
+    ################################################################
+    # The Kaggle chest x-ray dataset contains 2 classes 150x150 (we change to 64x64) color images.
+    # Class Names: ['PNEUMONIA', 'NORMAL']
+    
     data_path = "nnprune/input/chest_xray"
     (train_images, train_labels), (test_images, test_labels), (
     val_images, val_labels) = training_from_data.load_data_pneumonia(data_path)
