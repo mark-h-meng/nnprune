@@ -147,8 +147,17 @@ class Pruner:
                                                                 (test_features, test_labels),
                                                                 self.TARGET_ADV_EPSILONS,
                                                                 self.BATCH_SIZE_PER_EVALUATION)
-
-                
+        elif self.model_type == ModelType.MNIST:
+            robust_preservation = adversarial.robustness_evaluation(self.model,
+                                                                (test_features, test_labels),
+                                                                self.TARGET_ADV_EPSILONS,
+                                                                self.BATCH_SIZE_PER_EVALUATION)
+        elif self.model_type == ModelType.CIFAR:
+            robust_preservation = adversarial.robustness_evaluation_cifar(self.model,
+                                                                (test_features, test_labels),
+                                                                self.TARGET_ADV_EPSILONS,
+                                                                self.BATCH_SIZE_PER_EVALUATION)
+        
         else:
             print("Robustness evaluation not available for this release!")
         return robust_preservation
