@@ -3,6 +3,7 @@ from nnprune.sampler import Sampler
 
 import os
 import tensorflow as tf
+from tensorflow.keras import datasets
 import nnprune.utility.training_from_data as training_from_data
 from nnprune.utility.option import ModelType, SamplingMode
 
@@ -52,7 +53,7 @@ def test_kaggle_model():
     # The MNIST dataset contains 60,000 28x28 greyscale images of 10 digits.
     # There are 50000 training images and 10000 test images.
 
-    data_path = "tf_codes/input/kaggle/creditcard.csv"
+    data_path = "nnprune/input/kaggle/creditcard.csv"
     (train_features, train_labels), (test_features, test_labels) = training_from_data.load_data_creditcard_from_csv(data_path)
     print("Training dataset size: ", train_features.shape, train_labels.shape)
 
@@ -78,7 +79,85 @@ def test_kaggle_model():
     pruner.prune(evaluate=True)
     pruner.save_model(pruned_model_path)
 
+
+def test_mnist_model():
+    original_model_path = 'nnprune/models/mnist_mlp_5_layer'
+    pruned_model_path = 'nnprune/models/mnist_mlp_pruned_5_layer'
+
+    ################################################################
+    # Prepare dataset and pre-trained model                        #
+    ################################################################
+    # The MNIST dataset contains 60,000 28x28 greyscale images of 10 digits.
+    # There are 50000 training images and 10000 test images.
+
+    (train_features, train_labels), (test_features, test_labels) = datasets.mnist.load_data(path="mnist.npz")
+    print("Training dataset size: ", train_features.shape, train_labels.shape)
+    # Normalize pixel values to be between 0 and 1
+    train_features, test_features = train_features / 255.0, test_features / 255.0
+
+    print("Training dataset size: ", train_features.shape, train_labels.shape)
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+
+    training_from_data.train_mnist_5_layer_mlp((train_features, train_labels),
+                                                   (test_features, test_labels),
+                                                   original_model_path,
+                                                   overwrite=False,
+                                                   use_relu=True,
+                                                   optimizer_config=optimizer)
+
+    sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    pruner = Pruner(original_model_path, 
+        (test_features, test_labels), 
+        sample_strategy=sampler, 
+        alpha=0.75, 
+        first_mlp_layer_size = 128,
+        model_type=ModelType.MNIST)
+
+    pruner.load_model(optimizer)
+    pruner.prune(evaluate=True)
+    pruner.save_model(pruned_model_path)
+
+
+def test_cifar_10_model():
+    original_model_path = 'nnprune/models/cifar_10_cnn'
+    pruned_model_path = 'nnprune/models/cifar_10_cnn_pruned'
+
+    ################################################################
+    # Prepare dataset and pre-trained model                        #
+    ################################################################
+    # The CIFAR-10 dataset contains 60,000 32x32 color images in 10 classes.
+    # There are 50000 training images and 10000 test images.
+    (train_features, train_labels), (test_features, test_labels) = datasets.cifar10.load_data()
+    # Normalize pixel values to be between 0 and 1
+    train_features, test_features = train_features / 255.0, test_features / 255.0
+
+    print("Training dataset size: ", train_features.shape, train_labels.shape)
+
+    optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+    training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
+                                                   (test_features, test_labels),
+                                                   original_model_path,
+                                                   overwrite=False,
+                                                   use_relu=True,
+                                                   optimizer_config=optimizer)
+
+
+    sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    pruner = Pruner(original_model_path, 
+        (test_features, test_labels), 
+        sample_strategy=sampler, 
+        alpha=0.75, 
+        first_mlp_layer_size = 128,
+        model_type=ModelType.CIFAR)
+
+    pruner.load_model(optimizer)
+    pruner.prune(evaluate=True)
+    pruner.save_model(pruned_model_path)
+
 print(os.path.dirname(os.path.realpath(__file__)))
    
-#test_chest_xray_model()
-test_kaggle_model()
+# test_chest_xray_model()
+# test_kaggle_model()
+# test_mnist_model()
+test_cifar_10_model()
