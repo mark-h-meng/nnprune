@@ -25,6 +25,7 @@ from numpy.random import seed
 import os, time, csv, sys, shutil, math, time
 
 from tensorflow.python.eager.monitoring import Sampler
+from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 
 # Import own classes
 from nnprune.sampler import Sampler
@@ -42,13 +43,20 @@ class Pruner:
 
     constant = 0
     model = None
+    optimizer = None
     sampler = None
     robustness_evaluator = None
     model_path = None
     test_set = None
     BENCHMARKING_MODE = False
     
-    def __init__(self, path, test_set, sample_strategy=None, alpha=0.75):
+    first_mlp_layer_size = 0 
+    model_type = -1
+
+    lo_bound = 0
+    hi_bound = 1
+    
+    def __init__(self, path, test_set, sample_strategy=None, alpha=0.75, input_interval=(0,1), first_mlp_layer_size=128, model_type=ModelType.XRAY):
         """Initializes `Loss` class.
         Args:
         reduction: Type of `tf.keras.losses.Reduction` to apply to
@@ -72,11 +80,13 @@ class Pruner:
         seed(42)
         tf.random.set_seed(42)
 
+        self.model_type = model_type
+
         self.BATCH_SIZE_PER_PRUNING = 4
         self.TARGET_ADV_EPSILONS = [0.5]
         self.POOLING_MULTIPLIER = 2
         self.TARGET_PRUNING_PERCENTAGE = 0.8
-        self.BATCH_SIZE_PER_EVALUATION = 25
+        self.BATCH_SIZE_PER_EVALUATION = 50
 
         self.TRAIN_BIGGER_MODEL = True
 
@@ -98,10 +108,17 @@ class Pruner:
         
         self.test_set = test_set
 
-    def load_model(self):
+        (self.lo_bound, self.hi_bound) = input_interval
+        self.first_mlp_layer_size = first_mlp_layer_size
+
+    def load_model(self, optimizer=None):
         self.model = tf.keras.models.load_model(self.model_path)
         print(self.model.summary())
-
+        
+        if optimizer is None:
+            self.optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
+        else:
+            self.optimizer = optimizer
 
     def save_model(self, path):
         if os.path.exists(path):
@@ -112,14 +129,29 @@ class Pruner:
         print(" >>> Pruned model saved")
        
     def evaluate(self):
-        test_images, test_labels = self.test_set
-        self.model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
-        loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)
-        print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)    
+        test_features, test_labels = self.test_set
+        self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+        loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
+        print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+        return loss, accuracy
     
-    def evaluate_robustness(self, benchmarking=False):
-        test_images, test_labels = self.test_set
-        print("Robustness evaluation accomplished")
+    def evaluate_robustness(self):
+        test_features, test_labels = self.test_set
+        if self.model_type == ModelType.XRAY:
+            robust_preservation = adversarial.robustness_evaluation_chest(self.model,
+                                                                (test_features, test_labels),
+                                                                self.TARGET_ADV_EPSILONS,
+                                                                self.BATCH_SIZE_PER_EVALUATION)
+        elif self.model_type == ModelType.CREDIT:
+            robust_preservation = adversarial.robustness_evaluation_kaggle(self.model,
+                                                                (test_features, test_labels),
+                                                                self.TARGET_ADV_EPSILONS,
+                                                                self.BATCH_SIZE_PER_EVALUATION)
+
+                
+        else:
+            print("Robustness evaluation not available for this release!")
+        return robust_preservation
 
 
     def prune(self, evaluate=False):
@@ -155,9 +187,9 @@ class Pruner:
         
         model = self.model
 
-        big_map = simprop.get_definition_map(model, input_interval=(0,1))
+        big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
     
-        num_units_first_mlp_layer = 128
+        num_units_first_mlp_layer = self.first_mlp_layer_size
         # Start elapsed time counting
         start_time = time.time()
 
@@ -201,12 +233,15 @@ class Pruner:
 
                 model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
                 if not self.BENCHMARKING_MODE:
+                    '''
                     robust_preservation = adversarial.robustness_evaluation_chest(model,
                                                                             (test_images, test_labels),
                                                                             self.TARGET_ADV_EPSILONS,
                                                                             self.BATCH_SIZE_PER_EVALUATION)
-
-                    loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
+                    '''
+                    robust_preservation = self.evaluate_robustness()
+                    #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
+                    loss, accuracy = self.evaluate()
 
                     # Update score_board and tape_of_moves
                     score_board.append(robust_preservation)
