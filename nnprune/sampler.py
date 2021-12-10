@@ -68,5 +68,81 @@ class Sampler:
     def __stochastic_sampler(self):
         print("Stochastic sampling selected.")
 
-    def nominate_candidate(self):
-        print("Candidates to be pruned nominated.")
+    def prune(self, model, big_map, prune_percentage=None,
+                     neurons_manipulated=None, saliency_matrix=None,
+                     recursive_pruning=False, cumulative_impact_intervals=None,
+                     bias_aware=False, pooling_multiplier=1,
+                     target_scores=None, hyperparamters=(0.5, 0.5)):
+        pruned_pairs = None
+        pruning_pairs_dict_overall_scores = None
+        if self.mode == SamplingMode.BASELINE:
+            result = pruning.pruning_baseline(model, big_map, prune_percentage, neurons_manipulated,
+                                        saliency_matrix, recursive_pruning, bias_aware)
+            (model, neurons_manipulated, pruned_pairs, saliency_matrix) = result
+
+            count_pairs_pruned_curr_epoch = 0
+            if pruned_pairs is not None:
+                for layer, pairs in enumerate(pruned_pairs):
+                    if len(pairs) > 0:
+                        print(" >> Pruning", pairs, "at layer", str(layer))
+                        for pair in pairs:
+                            count_pairs_pruned_curr_epoch += 1
+
+        elif self.mode == SamplingMode.GREEDY:
+            result = pruning.pruning_greedy(model, big_map, prune_percentage,
+                   cumulative_impact_intervals,
+                   pooling_multiplier,
+                   neurons_manipulated,
+                   hyperparamters,
+                   recursive_pruning,
+                   bias_aware,
+                   kaggle_credit=False)
+            (model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
+
+            count_pairs_pruned_curr_epoch = 0
+            if pruned_pairs is not None:
+                for layer, pairs in enumerate(pruned_pairs):
+                    if len(pairs) > 0:
+                        print(" >> Pruning", pairs, "at layer", str(layer))
+                        print(" >>   with assessment score ", end=' ')
+                        for pair in pairs:
+                            count_pairs_pruned_curr_epoch += 1
+                            print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                        print()
+
+        elif self.mode == SamplingMode.STOCHASTIC:
+            result = pruning.pruning_stochastic(model, big_map, prune_percentage,
+                      cumulative_impact_intervals,
+                      neurons_manipulated,
+                      target_scores,
+                      hyperparamters,
+                      recursive_pruning,
+                      bias_aware,
+                      kaggle_credit=False)
+            (model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
+
+            count_pairs_pruned_curr_epoch = 0
+            if pruned_pairs is not None:
+                for layer, pairs in enumerate(pruned_pairs):
+                    if len(pairs) > 0:
+                        print(" >> Pruning", pairs, "at layer", str(layer))
+                        print(" >>   with assessment score ", end=' ')
+                        for pair in pairs:
+                            count_pairs_pruned_curr_epoch += 1
+                            print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                        print()
+                        print(" >> Updated target scores at this layer:", round(target_scores[layer], 3))
+        else:
+            print("Mode not recognized, execution aborted!")
+        
+        result_dict = {
+            'model': model,
+            'neurons_manipulated': neurons_manipulated,
+            'target_scores': target_scores,
+            'pruned_pairs': pruned_pairs,
+            'saliency_matrix': saliency_matrix,
+            'cumulative_impact_intervals': cumulative_impact_intervals,
+            'pruning_pairs_dict_overall_scores': pruning_pairs_dict_overall_scores
+        }
+
+        return result_dict

@@ -1,4 +1,4 @@
-import nnprune.utility.bcolors
+import nnprune.utility.bcolors as bcolors
 import nnprune.utility.saliency as saliency
 import nnprune.utility.utils as utils
 import nnprune.utility.interval_arithmetic as ia
@@ -412,7 +412,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
             # Just return if there is no candidates to prune
             if len(top_candidates) == 0:
-                return model, neurons_manipulated, [], cumulative_impact_intervals, pruning_pairs_dict_overall_scores
+                return model, neurons_manipulated, target_scores, [], cumulative_impact_intervals, pruning_pairs_dict_overall_scores
 
             # Now let's process the top_candidate first:
             #   top_candidate is a list of Series, with key as multi-index, and value as saliency
@@ -488,7 +488,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
                             count += 1
                             pruning_pairs_dict_overall_scores[layer_idx][(node_a, node_b)] = target_scores[layer_idx]
 
-                            print(" [DEBUG]", utility.bcolors.OKGREEN, "Accepting", utility.bcolors.ENDC, (node_a, node_b), curr_score)
+                            print(" [DEBUG]", bcolors.OKGREEN, "Accepting", bcolors.ENDC, (node_a, node_b), curr_score)
 
                         # Then we use simulated annealing algorithm to determine if we accept the next pair in the pruning list
                         else:
@@ -519,11 +519,11 @@ def pruning_stochastic(model, big_map, prune_percentage,
                                 count += 1
                                 pruning_pairs_dict_overall_scores[layer_idx][(node_a, node_b)] = curr_score
 
-                                print(" [DEBUG]", utility.bcolors.OKGREEN, "Accepting (stochastic)", utility.bcolors.ENDC, (node_a, node_b), "despite the score", 
+                                print(" [DEBUG]", bcolors.OKGREEN, "Accepting (stochastic)", bcolors.ENDC, (node_a, node_b), "despite the score", 
                                     round(curr_score, 6), "because the probability", round(prob_random, 6), "<=", round(prob_sim_annealing, 6))
 
                             else:
-                                print(" [DEBUG]", utility.bcolors.FAIL, "Reject", utility.bcolors.ENDC, (node_a, node_b), "because the score", 
+                                print(" [DEBUG]", bcolors.FAIL, "Reject", bcolors.ENDC, (node_a, node_b), "because the score", 
                                     round(curr_score, 6), ">", round(target_scores[layer_idx], 6), "and random prob. doesn't satisfy", round(prob_sim_annealing, 6))
                                 # Drop that pair from the neurons_manipulated list and enable re-considering in future epoch
                                 if node_b in neurons_manipulated[layer_idx]:

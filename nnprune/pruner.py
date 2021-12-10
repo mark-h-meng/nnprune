@@ -42,13 +42,13 @@ class Pruner:
 
     constant = 0
     model = None
-    sample_strategy = None
+    sampler = None
     robustness_evaluator = None
     model_path = None
     test_set = None
     BENCHMARKING_MODE = False
     
-    def __init__(self, path, test_set, alpha=0.75):
+    def __init__(self, path, test_set, sample_strategy=None, alpha=0.75):
         """Initializes `Loss` class.
         Args:
         reduction: Type of `tf.keras.losses.Reduction` to apply to
@@ -62,7 +62,10 @@ class Pruner:
                 more details.
         name: Optional name for the instance.
         """
-        self.sampler = Sampler()
+        if sample_strategy == None:
+            self.sampler = Sampler()
+        else:
+            self.sampler = sample_strategy
         self.robustness_evaluator = Evaluator()
         self.model_path = path
         # Specify a random seed
@@ -160,79 +163,32 @@ class Pruner:
 
         while(not stop_condition):
 
-            # The list neurons_manipulated records all neurons have been involved in pruning as a pair, and
-            #   passed to pruning function by-reference.
-            if self.sampler.mode == SamplingMode.BASELINE:
-                model, neurons_manipulated, pruned_pairs, saliency_matrix = pruning.pruning_baseline(model,
-                                                            big_map,
-                                                            prune_percentage=self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer,
-                                                            neurons_manipulated=neurons_manipulated,
-                                                            saliency_matrix=saliency_matrix,
-                                                            recursive_pruning=False,
-                                                            bias_aware=True)
+            pruning_result_dict = self.sampler.prune(model,big_map, 
+                                                prune_percentage=self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer,
+                                                cumulative_impact_intervals=cumulative_impact_intervals,
+                                                pooling_multiplier=self.POOLING_MULTIPLIER,
+                                                hyperparamters=self.hyperparameters,
+                                                neurons_manipulated=neurons_manipulated, saliency_matrix=saliency_matrix,
+                                                recursive_pruning=False,bias_aware=True)
 
-                count_pairs_pruned_curr_epoch = 0
-                if pruned_pairs is not None:
-                    for layer, pairs in enumerate(pruned_pairs):
-                        if len(pairs) > 0:
-                            print(" >> Pruning", pairs, "at layer", str(layer))
-                            for pair in pairs:
-                                count_pairs_pruned_curr_epoch += 1
-
-            elif self.sampler.mode == SamplingMode.GREEDY:
-                pruning_result = pruning.pruning_greedy(model,
-                                                        big_map,
-                                                        prune_percentage=self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer,
-                                                        cumulative_impact_intervals=cumulative_impact_intervals,
-                                                        pooling_multiplier=self.POOLING_MULTIPLIER,
-                                                        neurons_manipulated=neurons_manipulated,
-                                                        hyperparamters=self.hyperparameters,
-                                                        recursive_pruning=True,
-                                                        bias_aware=True)
-
-                (model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, score_dicts) = pruning_result
-
-                count_pairs_pruned_curr_epoch = 0
-                if pruned_pairs is not None:
-                    for layer, pairs in enumerate(pruned_pairs):
-                        if len(pairs) > 0:
-                            print(" >> Pruning", pairs, "at layer", str(layer))
-                            print(" >>   with assessment score ", end=' ')
-                            for pair in pairs:
-                                count_pairs_pruned_curr_epoch += 1
-                                print(round(score_dicts[layer][pair], 3), end=' ')
-                            print()
-
-            # For the case curr_mode=='stochastic':
-            else:
-                pruning_result = pruning.pruning_stochastic(model,
-                                                            big_map,
-                                                            prune_percentage=self.BATCH_SIZE_PER_PRUNING / 128,
-                                                            cumulative_impact_intervals=cumulative_impact_intervals,
-                                                            neurons_manipulated=neurons_manipulated,
-                                                            target_scores=target_scores,
-                                                            hyperparamters=self.hyperparameters,
-                                                            recursive_pruning=True)
-
-                (model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals,
-                score_dicts) = pruning_result
-
-                count_pairs_pruned_curr_epoch = 0
-                if pruned_pairs is not None:
-                    for layer, pairs in enumerate(pruned_pairs):
-                        if len(pairs) > 0:
-                            print(" >> Pruning", pairs, "at layer", str(layer))
-                            print(" >>   with assessment score ", end=' ')
-                            for pair in pairs:
-                                count_pairs_pruned_curr_epoch += 1
-                                print(round(score_dicts[layer][pair], 3), end=' ')
-                            print()
-                            print(" >> Updated target scores at this layer:", round(target_scores[layer], 3))
+            model = pruning_result_dict['model']
+            neurons_manipulated = pruning_result_dict['neurons_manipulated']
+            target_scores = pruning_result_dict['target_scores']
+            pruned_pairs = pruning_result_dict['pruned_pairs']
+            cumulative_impact_intervals = pruning_result_dict['cumulative_impact_intervals']
+            saliency_matrix = pruning_result_dict['saliency_matrix']
+            score_dicts = pruning_result_dict['pruning_pairs_dict_overall_scores']
 
             epoch_couter += 1
 
             # Check if the list of pruned pair is empty or not - empty means no more pruning is feasible
-            if count_pairs_pruned_curr_epoch == 0:
+            num_pruned_curr_batch = 0
+            if pruned_pairs is not None:
+                for layer, pairs in enumerate(pruned_pairs):
+                    if len(pairs) > 0:
+                        num_pruned_curr_batch += len(pairs)
+
+            if num_pruned_curr_batch == 0:
                 stop_condition = True
                 print(" >> No more hidden unit could be pruned, we stop at EPOCH", epoch_couter)
             else:
@@ -242,8 +198,6 @@ class Pruner:
 
                 percentage_been_pruned += self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer
                 print(" >> Pruning progress:", bcolors.BOLD, str(percentage_been_pruned * 100) + "%", bcolors.ENDC)
-                num_units_pruned += count_pairs_pruned_curr_epoch
-                print(" >> Total number of units pruned:", bcolors.BOLD, num_units_pruned, bcolors.ENDC)
 
                 model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
                 if not self.BENCHMARKING_MODE:

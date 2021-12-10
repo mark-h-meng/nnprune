@@ -5,6 +5,7 @@ from nnprune.evaluator import Evaluator
 import os
 import tensorflow as tf
 import nnprune.utility.training_from_data as training_from_data
+from nnprune.utility.option import SamplingMode
 
 '''
 def test_pruner():
@@ -45,11 +46,11 @@ def test_chest_xray_model():
                                                                     data_augmentation=True,
                                                                     val_data=(val_images, val_labels))
 
-       
-    pruner = Pruner(original_model_path, (test_images, test_labels), alpha=0.75)
+    sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    pruner = Pruner(original_model_path, (test_images, test_labels), sample_strategy=sampler, alpha=0.75)
 
     pruner.load_model()
-    pruner.prune()
+    pruner.prune(evaluate=True)
     pruner.save_model(pruned_model_path)
 
 test_chest_xray_model()
