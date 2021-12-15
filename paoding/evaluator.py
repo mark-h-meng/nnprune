@@ -16,6 +16,8 @@
 #!/usr/bin/python3
 
 # Import publicly published & installed packages
+import tensorflow as tf
+
 from paoding.utility.option import ModelType, AttackAlogirithm
 import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
 
@@ -24,8 +26,9 @@ class Evaluator:
     epsilons = []
     batch_size = 0
     attack_mode = -1
+    metrics = ['accuracy']
 
-    def __init__(self, epsilons = [0.5], batch_size = 50, attack_mode = AttackAlogirithm.FGSM):
+    def __init__(self, epsilons = [0.5], batch_size = 50, attack_mode = AttackAlogirithm.FGSM, k=1):
         """Initializes `Loss` class.
         Args:
         reduction: Type of `tf.keras.losses.Reduction` to apply to
@@ -46,13 +49,16 @@ class Evaluator:
         self.batch_size = batch_size
         self.attack_mode = attack_mode
 
-    def evaluate_robustness(self, model, test_set, model_type):
+        if k > 1:
+            self.metrics.append(tf.keras.metrics.TopKCategoricalAccuracy(k))
+
+    def evaluate_robustness(self, model, test_set, model_type, k=1):
         if self.attack_mode == AttackAlogirithm.FGSM:
-            return self.__fgsm(model, test_set, model_type)
+            return self.__fgsm(model, test_set, model_type, k)
         else:
             print("Evaluation mode not set or set to an illegal value, please check!")
         
-    def __fgsm(self, model, test_set, model_type):
+    def __fgsm(self, model, test_set, model_type, k):
         test_features, test_labels = test_set
         if model_type == ModelType.XRAY:
             robust_preservation = adversarial.robustness_evaluation_chest(model,
@@ -70,7 +76,14 @@ class Evaluator:
                                                                 self.epsilons,
                                                                 self.batch_size)
         elif model_type == ModelType.CIFAR:
-            robust_preservation = adversarial.robustness_evaluation_cifar(model,
+            if k > 1:
+                robust_preservation = adversarial.robustness_evaluation_cifar_topK(model, 
+                                                                (test_features, test_labels),
+                                                                self.epsilons,
+                                                                self.batch_size, k)
+
+            else:
+                robust_preservation = adversarial.robustness_evaluation_cifar(model,
                                                                 (test_features, test_labels),
                                                                 self.epsilons,
                                                                 self.batch_size)

@@ -126,9 +126,9 @@ class Pruner:
         self.model.save(path)
         print(" >>> Pruned model saved")
        
-    def evaluate(self):
+    def evaluate(self, metrics=['accuracy']):
         test_features, test_labels = self.test_set
-        self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
@@ -136,9 +136,9 @@ class Pruner:
     def prune(self, evaluator=None):
         if evaluator is not None:
             self.BENCHMARKING_MODE = False
+            self.robustness_evaluator = evaluator
         else:
             self.BENCHMARKING_MODE = True
-            self.robustness_evaluator = evaluator
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("nnprune/logs/")
         utils.create_dir_if_not_exist("nnprune/save_figs/")
@@ -213,12 +213,7 @@ class Pruner:
 
                 model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
                 if not self.BENCHMARKING_MODE:
-                    '''
-                    robust_preservation = adversarial.robustness_evaluation_chest(model,
-                                                                            (test_images, test_labels),
-                                                                            self.TARGET_ADV_EPSILONS,
-                                                                            self.BATCH_SIZE_PER_EVALUATION)
-                    '''
+                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
                     #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
                     loss, accuracy = self.evaluate()

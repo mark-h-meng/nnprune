@@ -110,7 +110,7 @@ def test_mnist_model():
                                                    optimizer_config=optimizer)
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
-    evaluator = Evaluator()
+    evaluator = Evaluator(adversarial_epsilons=[0.01, 0.05], sample=500)
     pruner = Pruner(original_model_path, 
         (test_features, test_labels), 
         sample_strategy=sampler, 
@@ -123,7 +123,7 @@ def test_mnist_model():
     pruner.save_model(pruned_model_path)
 
 
-def test_cifar_10_model():
+def test_cifar_10_model(k=1):
     original_model_path = 'paoding/models/cifar_10_cnn'
     pruned_model_path = 'paoding/models/cifar_10_cnn_pruned'
 
@@ -139,16 +139,29 @@ def test_cifar_10_model():
     print("Training dataset size: ", train_features.shape, train_labels.shape)
 
     optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-    training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
+    
+    if k > 1:
+        original_model_path += '_k'
+        pruned_model_path += '_k'
+        training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
+                                                   (test_features, test_labels),
+                                                   original_model_path,
+                                                   overwrite=False,
+                                                   use_relu=True,
+                                                   optimizer_config=optimizer,
+                                                   epochs=30,
+                                                   topK=3)
+        evaluator = Evaluator(k=3,epsilons = [0.05], batch_size=500)
+    else:
+        training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
                                                    (test_features, test_labels),
                                                    original_model_path,
                                                    overwrite=False,
                                                    use_relu=True,
                                                    optimizer_config=optimizer)
-
+        evaluator = Evaluator(epsilons = [0.05], batch_size=500)
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
-    evaluator = Evaluator()
     pruner = Pruner(original_model_path, 
         (test_features, test_labels), 
         sample_strategy=sampler, 
@@ -162,7 +175,10 @@ def test_cifar_10_model():
 
 print(os.path.dirname(os.path.realpath(__file__)))
    
+'''
 test_chest_xray_model()
 test_kaggle_model()
 test_mnist_model()
 test_cifar_10_model()
+'''
+test_cifar_10_model(k=3)
