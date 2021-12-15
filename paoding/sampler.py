@@ -18,8 +18,6 @@
 # Import publicly published & installed packages
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 
 from numpy.random import seed
 import os, time, csv, sys, shutil, math, time
@@ -27,16 +25,16 @@ import os, time, csv, sys, shutil, math, time
 from tensorflow.python.eager.monitoring import Sampler
 
 # Import own classes
-from nnprune.sampler import Sampler
-from nnprune.evaluator import Evaluator
-from nnprune.utility.option import SamplingMode
-import nnprune.utility.adversarial_mnist_fgsm_batch as adversarial
-import nnprune.utility.training_from_data as training_from_data
-import nnprune.utility.pruning as pruning
-import nnprune.utility.utils as utils
-import nnprune.utility.bcolors as bcolors
-import nnprune.utility.interval_arithmetic as ia
-import nnprune.utility.simulated_propagation as simprop
+from paoding.sampler import Sampler
+from paoding.evaluator import Evaluator
+from paoding.utility.option import SamplingMode
+import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
+import paoding.utility.training_from_data as training_from_data
+import paoding.utility.pruning as pruning
+import paoding.utility.utils as utils
+import paoding.utility.bcolors as bcolors
+import paoding.utility.interval_arithmetic as ia
+import paoding.utility.simulated_propagation as simprop
 
 class Sampler:
 

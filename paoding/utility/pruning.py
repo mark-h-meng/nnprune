@@ -1,8 +1,8 @@
-import nnprune.utility.bcolors as bcolors
-import nnprune.utility.saliency as saliency
-import nnprune.utility.utils as utils
-import nnprune.utility.interval_arithmetic as ia
-import nnprune.utility.simulated_propagation as simprop
+import paoding.utility.bcolors as bcolors
+import paoding.utility.saliency as saliency
+import paoding.utility.utils as utils
+import paoding.utility.interval_arithmetic as ia
+import paoding.utility.simulated_propagation as simprop
 import math
 import numpy as np
 import random

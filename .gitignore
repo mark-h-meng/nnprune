@@ -144,7 +144,7 @@ cython_debug/
 
 # End of https://www.toptal.com/developers/gitignore/api/python
 
-nnprune/input/
-nnprune/save-figs/
-nnprune/models/
-nnprune/logs/
+paoding/input/
+paoding/save-figs/
+paoding/models/
+paoding/logs/

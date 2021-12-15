@@ -2,15 +2,15 @@ import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-import nnprune.utility.training_from_data as training_from_data
+# import nnprune.utility.training_from_data as training_from_data
 import random, time, shutil, os
 import numpy as np
 import csv
 import progressbar
 
 import argparse
-import nnprune.utility.utils as utils
-import matplotlib.gridspec as gridspec
+import paoding.utility.utils as utils
+# import matplotlib.gridspec as gridspec
 
 mpl.rcParams['figure.figsize'] = (7, 7)
 mpl.rcParams['axes.grid'] = False
@@ -618,18 +618,18 @@ def robustness_evaluation_chest(model, dataset, epsilons, num_iteration):
             perts = eps * perturbations
             adv_x = create_adversarial_example(target_images[0], perts)
             adv_class, adv_confidence = attack_images_chest(adv_x, model)
-            if image_class == 1:
-                gs = gridspec.GridSpec(1, 6)
-                fig = plt.figure()
+            #if image_class == 1:
+                #gs = gridspec.GridSpec(1, 6)
+                #fig = plt.figure()
                 # Keep some sub figures at the first row blanks
-                ax1 = fig.add_subplot(gs[0, 1:3])
-                ax2 = fig.add_subplot(gs[0, 3:5])
-                ax1.imshow(target_images[0])
-                ax1.set_title('Instance #{}Label {} - {:.2f}% Confidence'.format(sample_index, image_class, class_confidence * 100))
-                ax2.set_title(
-                    'Label {} - {:.2f}% Confidence'.format(adv_class, adv_confidence * 100))
-                ax2.imshow(adv_x)
-                plt.show()
+                #ax1 = fig.add_subplot(gs[0, 1:3])
+                #ax2 = fig.add_subplot(gs[0, 3:5])
+                #ax1.imshow(target_images[0])
+                #ax1.set_title('Instance #{}Label {} - {:.2f}% Confidence'.format(sample_index, image_class, class_confidence * 100))
+                #ax2.set_title(
+                #    'Label {} - {:.2f}% Confidence'.format(adv_class, adv_confidence * 100))
+                #ax2.imshow(adv_x)
+                #plt.show()
 
             # Record the maximum epsilon that the classifier still not to misbehave
             if image_class == adv_class:
@@ -731,7 +731,7 @@ def robustness_evaluation_kaggle(model, dataset, epsilons, num_iteration):
 
     return robustness_stat_dict
 
-
+'''
 def main(args):
 
     # Read parameters from exec arguments
@@ -943,3 +943,4 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
     main(args)
+'''

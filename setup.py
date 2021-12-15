@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.0' 
+VERSION = '0.9a1' 
 DESCRIPTION = 'Data-free robustness preserving neural network pruning'
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -9,7 +9,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 # Setting up
 setup(
        # the name must match the folder name 'nnprune'
-        name="nnprune", 
+        name="paoding-dl", 
         version=VERSION,
         author="Mark H. Meng",
         author_email="<menghs@i2r.a-star.edu.sg>",
@@ -24,12 +24,9 @@ setup(
         packages=find_packages(),
         install_requires=[
             'tensorflow==2.3.0',
-            'tensorflow-model-optimization',
-            'matplotlib',
             'scikit-learn',
             'pandas',
             'progressbar2',
-            'seaborn>=0.11.1',
             'opencv-python>=4.5'
         ], 
         

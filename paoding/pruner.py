@@ -18,8 +18,6 @@
 # Import publicly published & installed packages
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
-import matplotlib.pyplot as plt
-from matplotlib.ticker import FormatStrFormatter
 
 from numpy.random import seed
 import os, time, csv, sys, shutil, math, time
@@ -28,16 +26,16 @@ from tensorflow.python.eager.monitoring import Sampler
 from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 
 # Import own classes
-from nnprune.sampler import Sampler
-from nnprune.evaluator import Evaluator
-from nnprune.utility.option import SamplingMode, ModelType
-import nnprune.utility.adversarial_mnist_fgsm_batch as adversarial
-import nnprune.utility.training_from_data as training_from_data
-import nnprune.utility.pruning as pruning
-import nnprune.utility.utils as utils
-import nnprune.utility.bcolors as bcolors
-import nnprune.utility.interval_arithmetic as ia
-import nnprune.utility.simulated_propagation as simprop
+from paoding.sampler import Sampler
+from paoding.evaluator import Evaluator
+from paoding.utility.option import SamplingMode, ModelType
+import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
+import paoding.utility.training_from_data as training_from_data
+import paoding.utility.pruning as pruning
+import paoding.utility.utils as utils
+import paoding.utility.bcolors as bcolors
+import paoding.utility.interval_arithmetic as ia
+import paoding.utility.simulated_propagation as simprop
 
 class Pruner:
 
@@ -134,40 +132,13 @@ class Pruner:
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
-    
-    def evaluate_robustness(self):
-        test_features, test_labels = self.test_set
-        if self.model_type == ModelType.XRAY:
-            robust_preservation = adversarial.robustness_evaluation_chest(self.model,
-                                                                (test_features, test_labels),
-                                                                self.TARGET_ADV_EPSILONS,
-                                                                self.BATCH_SIZE_PER_EVALUATION)
-        elif self.model_type == ModelType.CREDIT:
-            robust_preservation = adversarial.robustness_evaluation_kaggle(self.model,
-                                                                (test_features, test_labels),
-                                                                self.TARGET_ADV_EPSILONS,
-                                                                self.BATCH_SIZE_PER_EVALUATION)
-        elif self.model_type == ModelType.MNIST:
-            robust_preservation = adversarial.robustness_evaluation(self.model,
-                                                                (test_features, test_labels),
-                                                                self.TARGET_ADV_EPSILONS,
-                                                                self.BATCH_SIZE_PER_EVALUATION)
-        elif self.model_type == ModelType.CIFAR:
-            robust_preservation = adversarial.robustness_evaluation_cifar(self.model,
-                                                                (test_features, test_labels),
-                                                                self.TARGET_ADV_EPSILONS,
-                                                                self.BATCH_SIZE_PER_EVALUATION)
-        
-        else:
-            print("Robustness evaluation not available for this release!")
-        return robust_preservation
-
-
-    def prune(self, evaluate=False):
-        if evaluate:
+       
+    def prune(self, evaluator=None):
+        if evaluator is not None:
             self.BENCHMARKING_MODE = False
         else:
             self.BENCHMARKING_MODE = True
+            self.robustness_evaluator = evaluator
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("nnprune/logs/")
         utils.create_dir_if_not_exist("nnprune/save_figs/")
@@ -248,7 +219,7 @@ class Pruner:
                                                                             self.TARGET_ADV_EPSILONS,
                                                                             self.BATCH_SIZE_PER_EVALUATION)
                     '''
-                    robust_preservation = self.evaluate_robustness()
+                    robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
                     #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
                     loss, accuracy = self.evaluate()
 

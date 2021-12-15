@@ -1,5 +1,5 @@
-import nnprune.utility.interval_arithmetic as ia
-import nnprune.utility.utils as utils
+import paoding.utility.interval_arithmetic as ia
+import paoding.utility.utils as utils
 import math
 
 

@@ -1,5 +1,5 @@
 import numpy as np
-import nnprune.utility.interval_arithmetic as ia
+import paoding.utility.interval_arithmetic as ia
 
 def build_saliency_matrix(curr_parameters, next_paramters):
     size = len(curr_parameters)

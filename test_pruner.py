@@ -1,16 +1,17 @@
-from nnprune.pruner import Pruner
-from nnprune.sampler import Sampler
+from paoding.pruner import Pruner
+from paoding.sampler import Sampler
+from paoding.evaluator import Evaluator
 
 import os
 import tensorflow as tf
 from tensorflow.keras import datasets
-import nnprune.utility.training_from_data as training_from_data
-from nnprune.utility.option import ModelType, SamplingMode
+import paoding.utility.training_from_data as training_from_data
+from paoding.utility.option import ModelType, SamplingMode
 
 def test_chest_xray_model():
     
-    original_model_path = 'nnprune/models/chest_xray_cnn'
-    pruned_model_path = 'nnprune/models/chest_xray_cnn_pruned'
+    original_model_path = 'paoding/models/chest_xray_cnn'
+    pruned_model_path = 'paoding/models/chest_xray_cnn_pruned'
 
     ################################################################
     # Prepare dataset and pre-trained model                        #
@@ -18,7 +19,7 @@ def test_chest_xray_model():
     # The Kaggle chest x-ray dataset contains 2 classes 150x150 (we change to 64x64) color images.
     # Class Names: ['PNEUMONIA', 'NORMAL']
     
-    data_path = "nnprune/input/chest_xray"
+    data_path = "paoding/input/chest_xray"
     (train_images, train_labels), (test_images, test_labels), (
     val_images, val_labels) = training_from_data.load_data_pneumonia(data_path)
     print("Training dataset size: ", train_images.shape, train_labels.shape)
@@ -32,6 +33,7 @@ def test_chest_xray_model():
                                                                     val_data=(val_images, val_labels))
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    evaluator = Evaluator()
     pruner = Pruner(original_model_path, 
                     (test_images, test_labels), 
                     sample_strategy=sampler, 
@@ -40,12 +42,12 @@ def test_chest_xray_model():
                     model_type=ModelType.XRAY)
 
     pruner.load_model()
-    pruner.prune(evaluate=True)
+    pruner.prune(evaluator=evaluator)
     pruner.save_model(pruned_model_path)
 
 def test_kaggle_model():
-    original_model_path = 'nnprune/models/kaggle_mlp_3_layer'
-    pruned_model_path = 'nnprune/models/kaggle_mlp_3_layer_pruned'
+    original_model_path = 'paoding/models/kaggle_mlp_3_layer'
+    pruned_model_path = 'paoding/models/kaggle_mlp_3_layer_pruned'
 
     ################################################################
     # Prepare dataset and pre-trained model                        #
@@ -53,7 +55,7 @@ def test_kaggle_model():
     # The MNIST dataset contains 60,000 28x28 greyscale images of 10 digits.
     # There are 50000 training images and 10000 test images.
 
-    data_path = "nnprune/input/kaggle/creditcard.csv"
+    data_path = "paoding/input/kaggle/creditcard.csv"
     (train_features, train_labels), (test_features, test_labels) = training_from_data.load_data_creditcard_from_csv(data_path)
     print("Training dataset size: ", train_features.shape, train_labels.shape)
 
@@ -67,6 +69,7 @@ def test_kaggle_model():
                                                    optimizer_config=optimizer)
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    evaluator = Evaluator()
     pruner = Pruner(original_model_path, 
         (test_features, test_labels), 
         sample_strategy=sampler, 
@@ -76,13 +79,13 @@ def test_kaggle_model():
         model_type=ModelType.CREDIT)
 
     pruner.load_model(optimizer)
-    pruner.prune(evaluate=True)
+    pruner.prune(evaluator=evaluator)
     pruner.save_model(pruned_model_path)
 
 
 def test_mnist_model():
-    original_model_path = 'nnprune/models/mnist_mlp_5_layer'
-    pruned_model_path = 'nnprune/models/mnist_mlp_pruned_5_layer'
+    original_model_path = 'paoding/models/mnist_mlp_5_layer'
+    pruned_model_path = 'paoding/models/mnist_mlp_pruned_5_layer'
 
     ################################################################
     # Prepare dataset and pre-trained model                        #
@@ -107,6 +110,7 @@ def test_mnist_model():
                                                    optimizer_config=optimizer)
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    evaluator = Evaluator()
     pruner = Pruner(original_model_path, 
         (test_features, test_labels), 
         sample_strategy=sampler, 
@@ -115,13 +119,13 @@ def test_mnist_model():
         model_type=ModelType.MNIST)
 
     pruner.load_model(optimizer)
-    pruner.prune(evaluate=True)
+    pruner.prune(evaluator=evaluator)
     pruner.save_model(pruned_model_path)
 
 
 def test_cifar_10_model():
-    original_model_path = 'nnprune/models/cifar_10_cnn'
-    pruned_model_path = 'nnprune/models/cifar_10_cnn_pruned'
+    original_model_path = 'paoding/models/cifar_10_cnn'
+    pruned_model_path = 'paoding/models/cifar_10_cnn_pruned'
 
     ################################################################
     # Prepare dataset and pre-trained model                        #
@@ -144,6 +148,7 @@ def test_cifar_10_model():
 
 
     sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+    evaluator = Evaluator()
     pruner = Pruner(original_model_path, 
         (test_features, test_labels), 
         sample_strategy=sampler, 
@@ -152,12 +157,12 @@ def test_cifar_10_model():
         model_type=ModelType.CIFAR)
 
     pruner.load_model(optimizer)
-    pruner.prune(evaluate=True)
+    pruner.prune(evaluator=evaluator)
     pruner.save_model(pruned_model_path)
 
 print(os.path.dirname(os.path.realpath(__file__)))
    
-# test_chest_xray_model()
-# test_kaggle_model()
-# test_mnist_model()
+test_chest_xray_model()
+test_kaggle_model()
+test_mnist_model()
 test_cifar_10_model()
