@@ -1,33 +1,28 @@
+#!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
+
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ReduceLROnPlateau
 import matplotlib.pyplot as plt
-import random, os, shutil
+import os, shutil
 import numpy as np
-from numpy.random import seed
-from sklearn.metrics import confusion_matrix
-import seaborn as sns
+#from sklearn.metrics import confusion_matrix
+#import seaborn as sns
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import cv2
 from tensorflow.python.keras import activations
 
-seed(42)
-tf.random.set_seed(42)
-
 # Quick fix to encounter memory growth issue when working on shared GPU workstation
 physical_devices = tf.config.list_physical_devices('GPU')
 if physical_devices:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
-
-def unpickle(file):
-    import pickle
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='latin1')
-    return dict
 
 
 def read_pneumonia_images_from_local(data_path, img_size=64):
@@ -133,6 +128,12 @@ def load_data_creditcard_from_csv(data_path):
     test_features = np.clip(test_features, -5, 5)
     return (train_features, train_labels), (test_features, test_labels)
 
+'''
+def unpickle(file):
+    import pickle
+    with open(file, 'rb') as fo:
+        dict = pickle.load(fo, encoding='latin1')
+    return dict
 
 def load_data_cifar100(data_path):
     # File paths
@@ -173,7 +174,7 @@ def load_data_cifar100(data_path):
     y_test = np.asarray(y_test)
 
     return (X_train, y_train), (X_test, y_test), (X_valid, y_valid), (subCategoryDict, superCategoryDict)
-
+'''
 
 def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -233,13 +234,14 @@ def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
         test_loss, test_accuracy = baseline_results[0], baseline_results[-4]
 
         test_predictions_baseline = model.predict(test_features, batch_size=BATCH_SIZE)
+        '''
         cm = confusion_matrix(test_labels, test_predictions_baseline > 0.5)
         plt.figure(figsize=(5, 5))
         sns.heatmap(cm, annot=True, fmt="d")
         plt.title('Confusion matrix @{:.2f}'.format(0.5))
         plt.ylabel('Actual label')
         plt.xlabel('Predicted label')
-
+        '''
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
@@ -297,7 +299,7 @@ def train_cifar_8_layer_cnn(train_data,
 
         model.save(path)
         print("Model has been saved")
-
+        '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
         plt.plot(training_history.history['val_accuracy'], label='val_accuracy')
         plt.xlabel('Epoch')
@@ -305,6 +307,7 @@ def train_cifar_8_layer_cnn(train_data,
         plt.ylim([0.4, 1])
         plt.legend(loc='lower right')
         #plt.show()
+        '''
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -418,7 +421,7 @@ def train_mnist_3_layer_mlp(train_data, test_data, path, overwrite=False, use_re
 
         model.save(path)
         print("Model has been saved")
-
+        '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
         plt.plot(training_history.history['val_accuracy'], label = 'val_accuracy')
         plt.xlabel('Epoch')
@@ -426,6 +429,7 @@ def train_mnist_3_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         plt.ylim([0.8,1])
         plt.legend(loc='lower right')
         #plt.show()
+        '''
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -474,7 +478,7 @@ def train_mnist_5_layer_mlp(train_data, test_data, path, overwrite=False, use_re
 
         model.save(path)
         print("Model has been saved")
-
+        '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
         plt.plot(training_history.history['val_accuracy'], label = 'val_accuracy')
         plt.xlabel('Epoch')
@@ -482,6 +486,7 @@ def train_mnist_5_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         plt.ylim([0.8,1])
         plt.legend(loc='lower right')
         #plt.show()
+        '''
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -576,7 +581,7 @@ def train_pneumonia_binary_classification_cnn(train_data,
 
         model.save(path)
         print("Model has been saved")
-
+        '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
         plt.plot(training_history.history['val_accuracy'], label = 'val_accuracy')
         plt.xlabel('Epoch')
@@ -584,6 +589,7 @@ def train_pneumonia_binary_classification_cnn(train_data,
         plt.ylim([0.7,1])
         plt.legend(loc='lower right')
         #plt.show()
+        '''
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -706,7 +712,7 @@ def train_cifar_6_layer_mlp(train_data, test_data, path, overwrite=False,
 
         model.save(path)
         print("Model has been saved")
-
+        '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
         plt.plot(training_history.history['val_accuracy'], label='val_accuracy')
         plt.xlabel('Epoch')
@@ -714,6 +720,7 @@ def train_cifar_6_layer_mlp(train_data, test_data, path, overwrite=False,
         plt.ylim([0.4, 1])
         plt.legend(loc='lower right')
         plt.show()
+        '''
     else:
         print("Model found, there is no need to re-train the model ...")
 

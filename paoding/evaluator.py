@@ -1,23 +1,13 @@
-
-# Copyright 2021 Mark H. Meng. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 #!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
 
 # Import publicly published & installed packages
 import tensorflow as tf
 
+# Import in-house classes
 from paoding.utility.option import ModelType, AttackAlogirithm
 import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
 
@@ -29,18 +19,14 @@ class Evaluator:
     metrics = ['accuracy']
 
     def __init__(self, epsilons = [0.5], batch_size = 50, attack_mode = AttackAlogirithm.FGSM, k=1):
-        """Initializes `Loss` class.
+        """Initializes `Evaluator` class.
         Args:
-        reduction: Type of `tf.keras.losses.Reduction` to apply to
-            loss. Default value is `AUTO`. `AUTO` indicates that the reduction
-            option will be determined by the usage context. For almost all cases
-            this defaults to `SUM_OVER_BATCH_SIZE`. When used with
-            `tf.distribute.Strategy`, outside of built-in training loops such as
-            `tf.keras` `compile` and `fit`, using `AUTO` or `SUM_OVER_BATCH_SIZE`
-            will raise an error. Please see this custom training [tutorial](
-            https://www.tensorflow.org/tutorials/distribute/custom_training) for
-                more details.
-        name: Optional name for the instance.
+        epsilons: The collection of adversarial epsilons (optional, 0.5 only by default).
+            Please refer to the FGSM for more details of the epsilon parameter.
+        batch_size: The batch size of test samples for each pruning epoch (optional, 50 by default).
+        attack_mode: The enumerated value to specify the attack algorithm applied for robustness preservation evaluation (optional, FGSM by default).
+            [PS] Only FGSM is supported in the Alpha release, refer to the ``paoding.utility.option.AttackAlogirithm`` for the technical definition.
+        k: The value indicates if the top-k accuracy is used (optiona, 1 by default).  
         """
         if type(epsilons) == list:
             self.epsilons = epsilons
@@ -53,6 +39,16 @@ class Evaluator:
             self.metrics.append(tf.keras.metrics.TopKCategoricalAccuracy(k))
 
     def evaluate_robustness(self, model, test_set, model_type, k=1):
+        """
+        Evaluate the model performance.
+        Args: 
+        model: The neural network model to be used for robustness preservation evaluation.
+        test_set: The tuple of test features and labels to be used for the evaluation.
+        model_type: The enumerated value that specifies the model type.
+        k:  The value indicates if the top-k accuracy is used (optiona, 1 by default).
+        Returns:
+        A dictionary of evaluation outcome, with each key represents the epsilon value, and value provides the number of robust instances observed.
+        """
         if self.attack_mode == AttackAlogirithm.FGSM:
             return self.__fgsm(model, test_set, model_type, k)
         else:

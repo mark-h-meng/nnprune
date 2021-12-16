@@ -1,40 +1,21 @@
-
-# Copyright 2021 Mark H. Meng. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 #!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
 
 # Import publicly published & installed packages
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
-
 from numpy.random import seed
-import os, time, csv, sys, shutil, math, time
-
+import os, time, csv, shutil, math, time
 from tensorflow.python.eager.monitoring import Sampler
-from tensorflow.python.keras.optimizer_v2 import optimizer_v2
 
-# Import own classes
+# Import in-house classes
 from paoding.sampler import Sampler
 from paoding.evaluator import Evaluator
 from paoding.utility.option import SamplingMode, ModelType
-import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
-import paoding.utility.training_from_data as training_from_data
-import paoding.utility.pruning as pruning
 import paoding.utility.utils as utils
 import paoding.utility.bcolors as bcolors
-import paoding.utility.interval_arithmetic as ia
 import paoding.utility.simulated_propagation as simprop
 
 class Pruner:
@@ -46,7 +27,7 @@ class Pruner:
     robustness_evaluator = None
     model_path = None
     test_set = None
-    BENCHMARKING_MODE = False
+    pruning_target = None
     
     first_mlp_layer_size = 0 
     model_type = -1
@@ -54,19 +35,20 @@ class Pruner:
     lo_bound = 0
     hi_bound = 1
     
-    def __init__(self, path, test_set, sample_strategy=None, alpha=0.75, input_interval=(0,1), first_mlp_layer_size=128, model_type=ModelType.XRAY):
-        """Initializes `Loss` class.
-        Args:
-        reduction: Type of `tf.keras.losses.Reduction` to apply to
-            loss. Default value is `AUTO`. `AUTO` indicates that the reduction
-            option will be determined by the usage context. For almost all cases
-            this defaults to `SUM_OVER_BATCH_SIZE`. When used with
-            `tf.distribute.Strategy`, outside of built-in training loops such as
-            `tf.keras` `compile` and `fit`, using `AUTO` or `SUM_OVER_BATCH_SIZE`
-            will raise an error. Please see this custom training [tutorial](
-            https://www.tensorflow.org/tutorials/distribute/custom_training) for
-                more details.
-        name: Optional name for the instance.
+    def __init__(self, path, test_set, target=0.5, sample_strategy=None, alpha=0.75, input_interval=(0,1), first_mlp_layer_size=128, model_type=ModelType.XRAY, seed_val=None):
+        """
+        Initializes `Pruner` class.
+        Args:     
+        path: The path of neural network model to be pruned.
+        test_set: The tuple of test features and labels used for evaluation purpose.
+        target: The percentage value of expected pruning goal (optional, 0.50 by default).
+        sample_strategy: The sampling strategy specified for pruning (optional).
+        alpha: The value of alpha parameters to be used in stochastic mode (optional, 0.75 by default).
+        input_interval: The value range of an legal input (optional, [0,1] by default).
+        first_mlp_layer_size: The size of the first fully connected layer (optional, 128 by default).
+        model_type: The enumerated value that specifies the model type (optional, binary classification model by default).
+            [PS] 4 modes are supported in the Alpha release, refer to the ``paoding.utility.option.ModelType`` for the technical definition.
+        seed: The seed for randomization for the reproducibility purpose (optional, to use only for the experimental purpose)
         """
         if sample_strategy == None:
             self.sampler = Sampler()
@@ -74,16 +56,18 @@ class Pruner:
             self.sampler = sample_strategy
         self.robustness_evaluator = Evaluator()
         self.model_path = path
+
         # Specify a random seed
-        seed(42)
-        tf.random.set_seed(42)
+        if seed_val is not None:
+            seed(seed_val)
+            tf.random.set_seed(seed_val)
 
         self.model_type = model_type
 
         self.BATCH_SIZE_PER_PRUNING = 4
         self.TARGET_ADV_EPSILONS = [0.5]
         self.POOLING_MULTIPLIER = 2
-        self.TARGET_PRUNING_PERCENTAGE = 0.8
+        self.pruning_target = target
         self.BATCH_SIZE_PER_EVALUATION = 50
 
         self.TRAIN_BIGGER_MODEL = True
@@ -110,6 +94,11 @@ class Pruner:
         self.first_mlp_layer_size = first_mlp_layer_size
 
     def load_model(self, optimizer=None):
+        """
+        Load the model.
+        Args: 
+        optimizer: The optimizer specified for evaluation purpose (optional, RMSprop with lr=0.01 by default).
+        """
         self.model = tf.keras.models.load_model(self.model_path)
         print(self.model.summary())
         
@@ -119,6 +108,11 @@ class Pruner:
             self.optimizer = optimizer
 
     def save_model(self, path):
+        """
+        Save the model to the path specified.
+        Args: 
+        path: The path that the model to be saved.
+        """
         if os.path.exists(path):
             shutil.rmtree(path)
             print("Overwriting existing pruned model ...")
@@ -127,23 +121,34 @@ class Pruner:
         print(" >>> Pruned model saved")
        
     def evaluate(self, metrics=['accuracy']):
+        """
+        Evaluate the model performance.
+        Args: 
+        metrics: The list of TF compatible metrics (optional, accuracy (only) by default).
+        Returns:
+        A tuple of loss and accuracy values
+        """
         test_features, test_labels = self.test_set
         self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
        
-    def prune(self, evaluator=None):
+    def prune(self, evaluator=None, pruned_model_path=None):
+        """
+        Perform pruning and save the pruned model to a specified location.
+        Args: 
+        evaluator: The evaluation configuration (optional, no evaluation requested by default).
+        pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
+        """
         if evaluator is not None:
-            self.BENCHMARKING_MODE = False
             self.robustness_evaluator = evaluator
-        else:
-            self.BENCHMARKING_MODE = True
         test_images, test_labels = self.test_set
-        utils.create_dir_if_not_exist("nnprune/logs/")
-        utils.create_dir_if_not_exist("nnprune/save_figs/")
+        utils.create_dir_if_not_exist("paoding/logs/")
+        # utils.create_dir_if_not_exist("paoding/save_figs/")
         
-        pruned_model_path=self.model_path+"_pruned"
+        if pruned_model_path is None:
+            pruned_model_path=self.model_path+"_pruned"
 
         # Define a list to record each pruning decision
         tape_of_moves = []
@@ -175,7 +180,7 @@ class Pruner:
 
         while(not stop_condition):
 
-            pruning_result_dict = self.sampler.prune(model,big_map, 
+            pruning_result_dict = self.sampler.nominate(model,big_map, 
                                                 prune_percentage=self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer,
                                                 cumulative_impact_intervals=cumulative_impact_intervals,
                                                 pooling_multiplier=self.POOLING_MULTIPLIER,
@@ -212,8 +217,7 @@ class Pruner:
                 print(" >> Pruning progress:", bcolors.BOLD, str(percentage_been_pruned * 100) + "%", bcolors.ENDC)
 
                 model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
-                if not self.BENCHMARKING_MODE:
-                    
+                if evaluator is not None:                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
                     #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
                     loss, accuracy = self.evaluate()
@@ -229,7 +233,7 @@ class Pruner:
             if self.sampler.mode == SamplingMode.BASELINE and percentage_been_pruned >= 0.5:
                 print(" >> Maximum pruning percentage has been reached")
                 stop_condition = True
-            elif not stop_condition and percentage_been_pruned >= self.TARGET_PRUNING_PERCENTAGE:
+            elif not stop_condition and percentage_been_pruned >= self.pruning_target:
                 print(" >> Target pruning percentage has been reached")
                 stop_condition = True
 
@@ -257,8 +261,8 @@ class Pruner:
         timestamp = time.strftime('%b-%d-%H%M', local_time)
 
 
-        tape_filename = "nnprune/logs/chest-" + timestamp + "-" + str(self.BATCH_SIZE_PER_EVALUATION)
-        if self.BENCHMARKING_MODE:
+        tape_filename = "paoding/logs/chest-" + timestamp + "-" + str(self.BATCH_SIZE_PER_EVALUATION)
+        if evaluator is None:
             tape_filename = tape_filename+"-BENCHMARK"
 
         if self.sampler.mode == SamplingMode.BASELINE:
@@ -282,7 +286,7 @@ class Pruner:
                 rob_pres_stat.append(accuracy_board[index])
                 csv_writer.writerow(rob_pres_stat)
             
-            if self.BENCHMARKING_MODE:
+            if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
         print("Pruning accomplished")

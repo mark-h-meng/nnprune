@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
+
 import paoding.utility.bcolors as bcolors
 import paoding.utility.saliency as saliency
 import paoding.utility.utils as utils

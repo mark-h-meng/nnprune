@@ -8,7 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 
 # Setting up
 setup(
-       # the name must match the folder name 'nnprune'
+        # the name must match the folder name 
         name="paoding-dl", 
         version=VERSION,
         author="Mark H. Meng",
@@ -22,12 +22,14 @@ setup(
         },
         
         packages=find_packages(),
+        test_suite="tests",
         install_requires=[
             'tensorflow==2.3.0',
             'scikit-learn',
             'pandas',
             'progressbar2',
             'opencv-python>=4.5'
+            'numpy'
         ], 
         
         keywords=['python', 'neural network pruning'],

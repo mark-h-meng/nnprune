@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
+
 import math
 
 
@@ -132,6 +137,7 @@ def check_budget_preservation(utilized_intervals, budget_intervals):
     return is_within_budget
 
 
+# For test purpose
 def main():
     (a, b) = (-0.9, 0.9)
     (c, d) = (-0.1, 0.1)

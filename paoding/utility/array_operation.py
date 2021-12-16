@@ -1,3 +1,9 @@
+#!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
+
 import numpy as np
 
 
@@ -20,6 +26,7 @@ def remove_column_from_2d_array(arr, column_index):
     return np.asarray(list)
 
 
+# For testing purpose
 def main():
     sample_array = np.array([[0,0,1,2,3,4,5,6],
                           [1,0,1,2,3,4,5,6],

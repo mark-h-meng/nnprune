@@ -1,58 +1,26 @@
-
-# Copyright 2021 Mark H. Meng. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#     http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ==============================================================================
 #!/usr/bin/python3
+__author__ = "Mark H. Meng"
+__copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
+__credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
+__license__ = "MIT"
 
 # Import publicly published & installed packages
 import tensorflow as tf
-from tensorflow.keras import datasets, layers, models
+import time
 
-from numpy.random import seed
-import os, time, csv, sys, shutil, math, time
-
-from tensorflow.python.eager.monitoring import Sampler
-
-# Import own classes
-from paoding.sampler import Sampler
-from paoding.evaluator import Evaluator
+# Import in-house classes
 from paoding.utility.option import SamplingMode
-import paoding.utility.adversarial_mnist_fgsm_batch as adversarial
-import paoding.utility.training_from_data as training_from_data
 import paoding.utility.pruning as pruning
-import paoding.utility.utils as utils
-import paoding.utility.bcolors as bcolors
-import paoding.utility.interval_arithmetic as ia
-import paoding.utility.simulated_propagation as simprop
 
 class Sampler:
 
     mode = -1
 
     def __init__(self, mode=SamplingMode.BASELINE):
-        """Initializes `Loss` class.
+        """Initializes `Sampler` class.
         Args:
-        reduction: Type of `tf.keras.losses.Reduction` to apply to
-            loss. Default value is `AUTO`. `AUTO` indicates that the reduction
-            option will be determined by the usage context. For almost all cases
-            this defaults to `SUM_OVER_BATCH_SIZE`. When used with
-            `tf.distribute.Strategy`, outside of built-in training loops such as
-            `tf.keras` `compile` and `fit`, using `AUTO` or `SUM_OVER_BATCH_SIZE`
-            will raise an error. Please see this custom training [tutorial](
-            https://www.tensorflow.org/tutorials/distribute/custom_training) for
-                more details.
-        name: Optional name for the instance.
+        mode: The mode of sampling strategy (optional, baseline mode by default).
+            [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
         """
         self.mode = mode
         pass
@@ -66,11 +34,18 @@ class Sampler:
     def __stochastic_sampler(self):
         print("Stochastic sampling selected.")
 
-    def prune(self, model, big_map, prune_percentage=None,
+    def nominate(self, model, big_map, prune_percentage=None,
                      neurons_manipulated=None, saliency_matrix=None,
                      recursive_pruning=False, cumulative_impact_intervals=None,
                      bias_aware=False, pooling_multiplier=1,
-                     target_scores=None, hyperparamters=(0.5, 0.5)):
+                     target_scores=None, hyperparamters=(0.75, 0.25)):
+        """
+        TO-DO
+        Initializes `Sampler` class.
+        Args:
+        mode: The mode of sampling strategy (optional, baseline mode by default).
+            [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
+        """
         pruned_pairs = None
         pruning_pairs_dict_overall_scores = None
         if self.mode == SamplingMode.BASELINE:
