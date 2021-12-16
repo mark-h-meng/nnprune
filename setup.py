@@ -1,7 +1,7 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.9a1' 
-DESCRIPTION = 'Data-free robustness preserving neural network pruning'
+VERSION = '0.0.1' 
+DESCRIPTION = 'Stochastic data-free robustness preserving neural network pruning'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     LONG_DESCRIPTION = fh.read()
@@ -16,9 +16,9 @@ setup(
         description=DESCRIPTION,
         long_description=LONG_DESCRIPTION,
         long_description_content_type="text/markdown",
-        url="https://github.com/pypa/sampleproject", # To be filled later
+        url="https://github.com/mark-h-meng/nnprune", 
         project_urls={ # To be filled later
-            "Bug Tracker": "https://github.com/pypa/sampleproject/issues",
+            "Bug Tracker": "https://github.com/mark-h-meng/nnprune",
         },
         
         packages=find_packages(),
@@ -32,11 +32,10 @@ setup(
         
         keywords=['python', 'neural network pruning'],
         classifiers= [
-            "Development Status :: 3 - Alpha",
-            "Intended Audience :: Education",
-            "Programming Language :: Python :: 2",
-            "Programming Language :: Python :: 3",
-            "Operating System :: MacOS :: MacOS X",
-            "Operating System :: Microsoft :: Windows",
+            'Development Status :: 2 - Pre-Alpha',
+            'Intended Audience :: Education',
+            'Intended Audience :: Science/Research',
+            'Programming Language :: Python :: 3',
+            'Operating System :: OS Independent'
         ]
 )
