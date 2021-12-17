@@ -1,0 +1,8 @@
+* Generate dist (tar.gz) *
+python setup.py sdist build
+
+* Create a wheels pack (whl) *
+python setup.py bdist_wheel --universal
+
+* Upload to PyPI * 
+twine upload dist/* --skip-existing
