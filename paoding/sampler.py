@@ -15,30 +15,24 @@ import paoding.utility.pruning as pruning
 class Sampler:
 
     mode = -1
+    params=(0, 0)
 
-    def __init__(self, mode=SamplingMode.BASELINE):
+    def __init__(self, mode=SamplingMode.BASELINE, params=(0.75, 0.25)):
         """Initializes `Sampler` class.
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
             [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
+        params: The tuple of parameters (for greedy and stochastic modes only) (optional, (0.75, 0.25) by default).
         """
         self.mode = mode
+        self.params = params
         pass
-
-    def __saliency_based_sampler(self):
-        print("Saliency-based sampling (baseline) selected.")
-
-    def __greedy_sampler(self):
-        print("Greedy sampling selected.")
-
-    def __stochastic_sampler(self):
-        print("Stochastic sampling selected.")
 
     def nominate(self, model, big_map, prune_percentage=None,
                      neurons_manipulated=None, saliency_matrix=None,
                      recursive_pruning=False, cumulative_impact_intervals=None,
-                     bias_aware=False, pooling_multiplier=1,
-                     target_scores=None, hyperparamters=(0.75, 0.25)):
+                     bias_aware=False, pooling_multiplier=2,
+                     target_scores=None):
         """
         TO-DO
         Initializes `Sampler` class.
@@ -66,7 +60,7 @@ class Sampler:
                    cumulative_impact_intervals,
                    pooling_multiplier,
                    neurons_manipulated,
-                   hyperparamters,
+                   self.params,
                    recursive_pruning,
                    bias_aware,
                    kaggle_credit=False)
@@ -88,7 +82,7 @@ class Sampler:
                       cumulative_impact_intervals,
                       neurons_manipulated,
                       target_scores,
-                      hyperparamters,
+                      self.params,
                       recursive_pruning,
                       bias_aware,
                       kaggle_credit=False)

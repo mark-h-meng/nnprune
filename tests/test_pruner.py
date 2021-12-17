@@ -142,14 +142,13 @@ class TestPruning(unittest.TestCase):
         data_path = "paoding/input/chest_xray"
         (train_images, train_labels), (test_images, test_labels), (val_images, val_labels) = training_from_data.load_data_pneumonia(data_path)
 
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))   
         evaluator = Evaluator()
         pruner = Pruner(original_model_path, 
                         (test_images, test_labels), 
                         target=0.5,
+                        step=0.025,
                         sample_strategy=sampler, 
-                        alpha=0.75,
-                        first_mlp_layer_size=128,
                         model_type=ModelType.XRAY,
                         seed_val=42)
 
@@ -166,15 +165,14 @@ class TestPruning(unittest.TestCase):
         
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))   
         
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
             target=0.5,
-            sample_strategy=sampler, 
-            alpha=0.75, 
+            step=0.025,
+            sample_strategy=sampler,  
             input_interval=(-5,5),
-            first_mlp_layer_size = 64,
             model_type=ModelType.CREDIT,
             seed_val=42)
 
@@ -194,14 +192,13 @@ class TestPruning(unittest.TestCase):
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
         evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
             target=0.25,
+            step=0.025,
             sample_strategy=sampler, 
-            alpha=0.75, 
-            first_mlp_layer_size = 128,
             model_type=ModelType.MNIST,
             seed_val=42)
 
@@ -227,13 +224,12 @@ class TestPruning(unittest.TestCase):
                                                     use_relu=True,
                                                     optimizer_config=optimizer)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
             target=0.25,
+            step=0.025,
             sample_strategy=sampler, 
-            alpha=0.75, 
-            first_mlp_layer_size = 128,
             model_type=ModelType.CIFAR,
             seed_val=42)
 
@@ -262,13 +258,12 @@ class TestPruning(unittest.TestCase):
                                                     topK=3)
         evaluator = Evaluator(k=3,epsilons = [0.01, 0.05], batch_size=50)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC)   
+        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
         pruner = Pruner(original_model_path, 
             (test_features, test_labels),
             target=0.25, 
+            step=0.025,
             sample_strategy=sampler, 
-            alpha=0.75, 
-            first_mlp_layer_size = 128,
             model_type=ModelType.CIFAR,
             seed_val=42)
 

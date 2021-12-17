@@ -27,25 +27,26 @@ class Pruner:
     robustness_evaluator = None
     model_path = None
     test_set = None
+
     pruning_target = None
+    pruning_step = None
     
-    first_mlp_layer_size = 0 
     model_type = -1
 
     lo_bound = 0
     hi_bound = 1
     
-    def __init__(self, path, test_set, target=0.5, sample_strategy=None, alpha=0.75, input_interval=(0,1), first_mlp_layer_size=128, model_type=ModelType.XRAY, seed_val=None):
+    def __init__(self, path, test_set=None, target=0.5, step=0.025, sample_strategy=None, input_interval=(0,1), model_type=ModelType.XRAY, seed_val=None):
         """
         Initializes `Pruner` class.
         Args:     
         path: The path of neural network model to be pruned.
         test_set: The tuple of test features and labels used for evaluation purpose.
         target: The percentage value of expected pruning goal (optional, 0.50 by default).
+        step: The percentage value of pruning portion during each epoch (optional, 0.025 by default).
         sample_strategy: The sampling strategy specified for pruning (optional).
         alpha: The value of alpha parameters to be used in stochastic mode (optional, 0.75 by default).
         input_interval: The value range of an legal input (optional, [0,1] by default).
-        first_mlp_layer_size: The size of the first fully connected layer (optional, 128 by default).
         model_type: The enumerated value that specifies the model type (optional, binary classification model by default).
             [PS] 4 modes are supported in the Alpha release, refer to the ``paoding.utility.option.ModelType`` for the technical definition.
         seed: The seed for randomization for the reproducibility purpose (optional, to use only for the experimental purpose)
@@ -55,8 +56,8 @@ class Pruner:
         else:
             self.sampler = sample_strategy
         self.robustness_evaluator = Evaluator()
+        
         self.model_path = path
-
         # Specify a random seed
         if seed_val is not None:
             seed(seed_val)
@@ -64,34 +65,21 @@ class Pruner:
 
         self.model_type = model_type
 
-        self.BATCH_SIZE_PER_PRUNING = 4
-        self.TARGET_ADV_EPSILONS = [0.5]
-        self.POOLING_MULTIPLIER = 2
+        self.target_adv_epsilons = [0.5]
+
         self.pruning_target = target
-        self.BATCH_SIZE_PER_EVALUATION = 50
-
-        self.TRAIN_BIGGER_MODEL = True
-
-        # Specify the mode of pruning
-        self.BASELINE_MODE = False
-
-        # Recursive mode
-        # PS: Baseline should is written in non-recursive mode
-        self.RECURSIVE_PRUNING = False
+        self.pruning_step = step
+        
+        self.evaluation_batch = 50
 
         # E.g. EPOCHS_PER_CHECKPOINT = 5 means we save the pruned model as a checkpoint after each five
         #    epochs and at the end of pruning
         self.EPOCHS_PER_CHECKPOINT = 15
-            
-        hyper_parameter_alpha = alpha
-
-        hyper_parameter_beta = 1-hyper_parameter_alpha
-        self.hyperparameters = (hyper_parameter_alpha, hyper_parameter_beta)
         
         self.test_set = test_set
 
         (self.lo_bound, self.hi_bound) = input_interval
-        self.first_mlp_layer_size = first_mlp_layer_size
+        #self.first_mlp_layer_size = first_mlp_layer_size
 
     def load_model(self, optimizer=None):
         """
@@ -128,6 +116,10 @@ class Pruner:
         Returns:
         A tuple of loss and accuracy values
         """
+        if self.test_set is None:
+            print("Test set not provided, evaluation aborted...")
+            return 0, 0
+
         test_features, test_labels = self.test_set
         self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
@@ -143,8 +135,8 @@ class Pruner:
         """
         if evaluator is not None:
             self.robustness_evaluator = evaluator
-            self.TARGET_ADV_EPSILONS = evaluator.epsilons
-            self.BATCH_SIZE_PER_EVALUATION = evaluator.batch_size
+            self.target_adv_epsilons = evaluator.epsilons
+            self.evaluation_batch = evaluator.batch_size
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
@@ -176,19 +168,16 @@ class Pruner:
 
         big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
     
-        num_units_first_mlp_layer = self.first_mlp_layer_size
         # Start elapsed time counting
         start_time = time.time()
 
         while(not stop_condition):
 
             pruning_result_dict = self.sampler.nominate(model,big_map, 
-                                                prune_percentage=self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer,
+                                                prune_percentage=self.pruning_step,
                                                 cumulative_impact_intervals=cumulative_impact_intervals,
-                                                pooling_multiplier=self.POOLING_MULTIPLIER,
-                                                hyperparamters=self.hyperparameters,
                                                 neurons_manipulated=neurons_manipulated, saliency_matrix=saliency_matrix,
-                                                recursive_pruning=False,bias_aware=True)
+                                                bias_aware=True)
 
             model = pruning_result_dict['model']
             neurons_manipulated = pruning_result_dict['neurons_manipulated']
@@ -215,11 +204,11 @@ class Pruner:
                     print(" >> Cumulative impact as intervals after this epoch:")
                     print(cumulative_impact_intervals)
 
-                percentage_been_pruned += self.BATCH_SIZE_PER_PRUNING/num_units_first_mlp_layer
-                print(" >> Pruning progress:", bcolors.BOLD, str(percentage_been_pruned * 100) + "%", bcolors.ENDC)
+                percentage_been_pruned += self.pruning_step
+                print(" >> Pruning progress:", bcolors.BOLD, str(round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
                 model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
-                if evaluator is not None:                    
+                if evaluator is not None and self.test_set is not None:                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
                     #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
                     loss, accuracy = self.evaluate()
@@ -241,7 +230,7 @@ class Pruner:
 
             # Save the pruned model at each checkpoint or after the last pruning epoch
             if epoch_couter % self.EPOCHS_PER_CHECKPOINT == 0 or stop_condition:
-                curr_pruned_model_path = pruned_model_path + "_ckpt_" + str(self.hyperparameters[0]) + "_" + str(math.ceil(epoch_couter/self.EPOCHS_PER_CHECKPOINT))
+                curr_pruned_model_path = pruned_model_path + "_ckpt_" + str(math.ceil(epoch_couter/self.EPOCHS_PER_CHECKPOINT))
 
                 if os.path.exists(curr_pruned_model_path):
                     shutil.rmtree(curr_pruned_model_path)
@@ -263,14 +252,14 @@ class Pruner:
         timestamp = time.strftime('%b-%d-%H%M', local_time)
 
 
-        tape_filename = "paoding/logs/chest-" + timestamp + "-" + str(self.BATCH_SIZE_PER_EVALUATION)
+        tape_filename = "paoding/logs/chest-" + timestamp + "-" + str(self.evaluation_batch)
         if evaluator is None:
             tape_filename = tape_filename+"-BENCHMARK"
 
         if self.sampler.mode == SamplingMode.BASELINE:
             tape_filename += "_tape_baseline.csv"
         else:
-            tape_filename = tape_filename + "_tape_" + self.sampler.mode.name + "_" + str(self.hyperparameters[0]) + ".csv"
+            tape_filename = tape_filename + "_tape_" + self.sampler.mode.name + ".csv"
 
         if os.path.exists(tape_filename):
             os.remove(tape_filename)
@@ -278,12 +267,12 @@ class Pruner:
         with open(tape_filename, 'w+', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
 
-            csv_line = [str(eps) for eps in self.TARGET_ADV_EPSILONS]
+            csv_line = [str(eps) for eps in self.target_adv_epsilons]
             csv_line.append('moves,loss,accuracy')
             csv_writer.writerow(csv_line)
 
             for index, item in enumerate(score_board):
-                rob_pres_stat = [item[k] for k in self.TARGET_ADV_EPSILONS]
+                rob_pres_stat = [item[k] for k in self.target_adv_epsilons]
                 rob_pres_stat.append(tape_of_moves[index])
                 rob_pres_stat.append(accuracy_board[index])
                 csv_writer.writerow(rob_pres_stat)
