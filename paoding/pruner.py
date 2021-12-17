@@ -143,6 +143,8 @@ class Pruner:
         """
         if evaluator is not None:
             self.robustness_evaluator = evaluator
+            self.TARGET_ADV_EPSILONS = evaluator.epsilons
+            self.BATCH_SIZE_PER_EVALUATION = evaluator.batch_size
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")

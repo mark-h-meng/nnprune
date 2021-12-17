@@ -18,7 +18,7 @@ setup(
         long_description_content_type="text/markdown",
         url="https://github.com/mark-h-meng/nnprune", 
         project_urls={ # To be filled later
-            "Bug Tracker": "https://github.com/mark-h-meng/nnprune",
+            "Bug Tracker": "https://github.com/mark-h-meng/nnprune/issues",
         },
         
         packages=find_packages(),

@@ -38,6 +38,20 @@ class Evaluator:
         if k > 1:
             self.metrics.append(tf.keras.metrics.TopKCategoricalAccuracy(k))
 
+    def get_epsilons(self): 
+        """Retrieve the epsilon parameters.
+        Returns:
+        epsilons: The collection of adversarial epsilons.
+        """
+        return self.epsilons
+
+    def get_batch_size(self): 
+        """Retrieve the batch size parameters.
+        Returns:
+        batch_size: The batch size of test samples for each pruning epoch.
+        """
+        return self.batch_size
+
     def evaluate_robustness(self, model, test_set, model_type, k=1):
         """
         Evaluate the model performance.

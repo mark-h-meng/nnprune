@@ -4,7 +4,7 @@ import numpy as np
 
 class TestArrayOperations(unittest.TestCase):
 
-    def test_array_equal(self):
+    def test_00_array_equal(self):
         
         sample_array = np.array([[0,0,1,2,3,4,5,6],
                           [1,0,1,2,3,4,5,6],
@@ -15,7 +15,7 @@ class TestArrayOperations(unittest.TestCase):
         updated_list = array_operation.remove_from_array(array_operation.remove_from_array(sample_array[0], 6), 1)
         assert np.array_equal(updated_list, list0), "Error occurred in array deletion"
 
-    def test_array_remove_row(self):
+    def test_01_array_remove_row(self):
         
         sample_array = np.array([[0,0,1,2,3,4,5,6],
                           [1,0,1,2,3,4,5,6],
@@ -27,7 +27,7 @@ class TestArrayOperations(unittest.TestCase):
         list1 = array_operation.remove_row_from_2d_array(sample_array, 1)
         assert np.array_equal(list1, sample_array_rm_row), "Error occurred in row deletion"
 
-    def test_array_remove_col(self):
+    def test_02_array_remove_col(self):
         
         sample_array = np.array([[0,0,1,2,3,4,5,6],
                           [1,0,1,2,3,4,5,6],
