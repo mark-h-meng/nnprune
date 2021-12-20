@@ -37,4 +37,4 @@ You may run the test cases given in the package to quicky go through the pruning
 ![model pruning](https://raw.githubusercontent.com/mark-h-meng/nnprune/main/README/pruning-benchmarking-mode.gif)
 
 
-![model evaluation](README/pruning-robustness-assessment.gif)
+![model evaluation](https://raw.githubusercontent.com/mark-h-meng/nnprune/main/README/pruning-robustness-assessment.gif)
