@@ -31,10 +31,10 @@ The third component is the Evaluator. The evaluator is used to assess the robust
 
 You may run the test cases given in the package to quicky go through the pruning process. The class "test_prunner" will firstly train a few sample models, then perform pruning in different modes, followed by robustness evaluation for selected pruned models. The entire demonstration may spend more than 10 minutes to finish, depending on the computation power of the machine. Some screenshots below depicts the testing process.
 
-![model training](img/model-training.gif)
+![model training](README/model-training.gif)
 
 
-![model training](img/pruning-benchmarking-mode.gif)
+![model training](README/pruning-benchmarking-mode.gif)
 
 
-![model training](img/pruning-robustness-assessment.gif)
+![model training](README/pruning-robustness-assessment.gif)
