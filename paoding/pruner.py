@@ -121,7 +121,7 @@ class Pruner:
             return 0, 0
 
         test_features, test_labels = self.test_set
-        self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
+        # self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy

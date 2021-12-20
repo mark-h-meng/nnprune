@@ -51,6 +51,20 @@ class Evaluator:
         batch_size: The batch size of test samples for each pruning epoch.
         """
         return self.batch_size
+    
+    def set_epsilons(self, epsilons): 
+        """Set the epsilon parameters.
+        Args:
+        epsilons: The collection of adversarial epsilons.
+        """
+        self.epsilons = epsilons
+
+    def set_batch_size(self, batch_size): 
+        """Set the batch size parameters.
+        Args:
+        batch_size: The batch size of test samples for each pruning epoch.
+        """
+        self.batch_size = batch_size
 
     def evaluate_robustness(self, model, test_set, model_type, k=1):
         """

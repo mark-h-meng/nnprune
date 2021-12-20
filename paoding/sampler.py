@@ -17,8 +17,17 @@ class Sampler:
     mode = -1
     params=(0, 0)
 
-    def __init__(self, mode=SamplingMode.BASELINE, params=(0.75, 0.25)):
+    def __init__(self, mode=SamplingMode.BASELINE):
         """Initializes `Sampler` class.
+        Args:
+        mode: The mode of sampling strategy (optional, baseline mode by default).
+            [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
+        """
+        self.mode = mode
+    
+
+    def set_strategy(self, mode, params=(0.75, 0.25)):
+        """Set the sampling strategy.
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
             [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
@@ -26,19 +35,31 @@ class Sampler:
         """
         self.mode = mode
         self.params = params
-        pass
 
-    def nominate(self, model, big_map, prune_percentage=None,
+
+    def nominate(self, model, big_map, prune_percentage=0.5,
                      neurons_manipulated=None, saliency_matrix=None,
                      recursive_pruning=False, cumulative_impact_intervals=None,
                      bias_aware=False, pooling_multiplier=2,
                      target_scores=None):
         """
-        TO-DO
-        Initializes `Sampler` class.
+        Nominate and prune the hidden units.
         Args:
-        mode: The mode of sampling strategy (optional, baseline mode by default).
-            [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
+        model: The model to be pruned.
+        big_map: The matrix of correlation between every hidden unit pairs.
+        prune_percentage: The goal of pruning (optional, 0.5 by default).
+        neurons_manipulated: The list of hidden unit indices that have been involved in previous pruning operations (optional, None by default).
+        saliency_matrix: The matrix of saliency between every hidden unit pairs, only applicable for baseline mode (optional, None by default).
+        recursive_pruning: The boolean parameter to indicate if recursive pruning is allowed (i.e., a neuron can be involved in pruning multiple times) (optional, False by default).
+        cumulative_impact_intervals: The cumulative pruning impact of all previous pruning operations (optional, None by default).
+        bias_aware: The boolean parameter to indicate if bias parameters to be considered in pruning (optional, False by default).
+        pooling_multiplier: The sampling multiplier at each pruning epoch, only applicable for stochastic mode (optional, 2 by default).
+        target_scores: The impact tolerance observed from the previous pruning operation, only applicable for stochastic mode (optional, None by default).
+        Returns:
+        A dictionary data structure including the pruned model, the list of neurons that have been manipulated (neurons_manipulated), 
+            target score observed from the current pruning operation (target_scores), the list of pairs have been nominated in the 
+            current pruning epoch (pruned_pairs), saliency matrix (saliency_matrix), cumulative impact intervals (cumulative_impact_intervals), 
+            and the latest assessment of every hidden unit pairs for further pruning (pruning_pairs_dict_overall_scores).
         """
         pruned_pairs = None
         pruning_pairs_dict_overall_scores = None

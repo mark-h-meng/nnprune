@@ -142,7 +142,8 @@ class TestPruning(unittest.TestCase):
         data_path = "paoding/input/chest_xray"
         (train_images, train_labels), (test_images, test_labels), (val_images, val_labels) = training_from_data.load_data_pneumonia(data_path)
 
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))   
+        sampler = Sampler()
+        sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))   
         evaluator = Evaluator()
         pruner = Pruner(original_model_path, 
                         (test_images, test_labels), 
@@ -165,8 +166,9 @@ class TestPruning(unittest.TestCase):
         
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))   
-        
+        sampler = Sampler()
+        sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
             target=0.5,
@@ -192,7 +194,9 @@ class TestPruning(unittest.TestCase):
 
         optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+        sampler = Sampler()
+        sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+
         evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
@@ -224,7 +228,9 @@ class TestPruning(unittest.TestCase):
                                                     use_relu=True,
                                                     optimizer_config=optimizer)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+        sampler = Sampler()
+        sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+        
         pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
             target=0.25,
@@ -258,7 +264,9 @@ class TestPruning(unittest.TestCase):
                                                     topK=3)
         evaluator = Evaluator(k=3,epsilons = [0.01, 0.05], batch_size=50)
         
-        sampler = Sampler(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+        sampler = Sampler()
+        sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+        
         pruner = Pruner(original_model_path, 
             (test_features, test_labels),
             target=0.25, 
