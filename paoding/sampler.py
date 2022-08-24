@@ -15,6 +15,7 @@ import paoding.utility.pruning as pruning
 class Sampler:
 
     mode = -1
+    mode_conv = -1
     params=(0, 0)
 
     def __init__(self, mode=SamplingMode.BASELINE):
@@ -24,6 +25,7 @@ class Sampler:
             [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
         """
         self.mode = mode
+        self.mode_conv = SamplingMode.SCALE
     
 
     def set_strategy(self, mode, params=(0.75, 0.25)):
@@ -34,6 +36,7 @@ class Sampler:
         params: The tuple of parameters (for greedy and stochastic modes only) (optional, (0.75, 0.25) by default).
         """
         self.mode = mode
+        self.mode_conv = SamplingMode.SCALE
         self.params = params
 
 
@@ -120,8 +123,15 @@ class Sampler:
                             print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
                         print()
                         print(" >> Updated target scores at this layer:", round(target_scores[layer], 3))
+        
+        elif self.mode == SamplingMode.SCALE:
+            result = pruning.pruning_scale_only_sparse(model, prune_percentage)
+            (model) = result
+
+            print(" >> Pruning accomplished.")
+        
         else:
-            print("Mode not recognized, execution aborted!")
+            print("Sampling mode not recognized, execution aborted!")
         
         result_dict = {
             'model': model,
@@ -132,5 +142,27 @@ class Sampler:
             'cumulative_impact_intervals': cumulative_impact_intervals,
             'pruning_pairs_dict_overall_scores': pruning_pairs_dict_overall_scores
         }
+
+        return result_dict
+
+    def nominate_conv(self, model, prune_percentage=0.5):
+        """
+        Nominate and prune the hidden units in convolutional layers.
+        Args:
+        model: The model to be pruned.
+        big_map: The matrix of correlation between every hidden unit pairs.
+        prune_percentage: The goal of pruning (optional, 0.5 by default).
+        
+        A dictionary data structure including the pruned model.
+        """
+        if self.mode_conv == SamplingMode.SCALE:
+            result = pruning.pruning_conv_scale(model, prune_percentage)
+            (model) = result
+
+            print(" >> Pruning at this layer accomplished.")
+
+            result_dict = {
+                'model': model
+            }
 
         return result_dict

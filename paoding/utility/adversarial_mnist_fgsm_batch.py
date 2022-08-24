@@ -6,8 +6,8 @@ __license__ = "MIT"
 
 import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
-import matplotlib as mpl
-import matplotlib.pyplot as plt
+#import matplotlib as mpl
+#import matplotlib.pyplot as plt
 import random
 import numpy as np
 import progressbar

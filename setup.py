@@ -24,7 +24,7 @@ setup(
         packages=find_packages(),
         test_suite="tests",
         install_requires=[
-            'tensorflow==2.3.0',
+            'tensorflow>=2.3.0',
             'scikit-learn',
             'pandas',
             'progressbar2',

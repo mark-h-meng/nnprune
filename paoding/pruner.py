@@ -125,14 +125,17 @@ class Pruner:
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
-       
+
     def prune(self, evaluator=None, pruned_model_path=None):
         """
-        Perform pruning and save the pruned model to a specified location.
+        Perform fully connected pruning and save the pruned model to a specified location.
         Args: 
         evaluator: The evaluation configuration (optional, no evaluation requested by default).
         pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
         """
+        return self.prune_fc(evaluator, pruned_model_path)
+
+    def prune_fc(self, evaluator=None, pruned_model_path=None):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons

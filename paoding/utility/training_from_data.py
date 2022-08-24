@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ReduceLROnPlateau
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 import os, shutil
 import numpy as np
 #from sklearn.metrics import confusion_matrix

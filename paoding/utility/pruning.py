@@ -595,3 +595,6 @@ def pruning_stochastic(model, big_map, prune_percentage,
     print(" >> DEBUG: size of cumulative impact total", len(cumulative_impact_intervals))
     print("Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
+
+def pruning_conv_scale(model, prune_percentage):
+    pass

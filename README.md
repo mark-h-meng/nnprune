@@ -9,7 +9,7 @@ The execution environment of the experiments is summarised as follows:
 
 ## Instructions
 
-The name of Paoding-DL originates from an ancient Chinese story recorded in book "Zhuang Zi". "Paoding" is the name of a chief with excellent skill in butchering and cooking.
+The name of Paoding-DL originates from an ancient Taoism story recorded in book "Zhuang Zi" that was published in 3rd century BC, under the title "Essentials for Nurturing Life" of the "Inner Chapters". "Paoding" is the name of a chief with excellent skill in butchering and cooking.
 
 ![paoding architecture](https://raw.githubusercontent.com/mark-h-meng/nnprune/main/README/overall.png)
 

@@ -18,6 +18,7 @@ class SamplingMode(Enum):
     BASELINE = 1
     GREEDY = 2
     STOCHASTIC = 3
+    SCALE = 0
     OTHER = -1
 
 class AttackAlogirithm(Enum):
