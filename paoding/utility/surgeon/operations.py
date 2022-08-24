@@ -1,6 +1,5 @@
 from paoding.utility.surgeon import Surgeon
 
-
 def delete_layer(model, layer, *, node_indices=None, copy=True):
     """Delete instances of a layer from a Keras model.
 
