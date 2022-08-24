@@ -284,4 +284,44 @@ class Pruner:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
         print("Pruning accomplished")
+
+    def prune_cnv(self, evaluator=None, pruned_model_path=None):
+        if evaluator is not None:
+            self.robustness_evaluator = evaluator
+            self.target_adv_epsilons = evaluator.epsilons
+            self.evaluation_batch = evaluator.batch_size
+        test_images, test_labels = self.test_set
+        utils.create_dir_if_not_exist("paoding/logs/")
+        # utils.create_dir_if_not_exist("paoding/save_figs/")
+        
+        if pruned_model_path is None:
+            pruned_model_path=self.model_path+"_pruned_conv"
+
+        
+        model = self.model
+
+        # Start elapsed time counting
+        start_time = time.time()
+        pruning_result_dict = self.sampler.nominate_conv(model, prune_percentage=self.pruning_step)
+
+        model = pruning_result_dict['model']
+
+        model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
+        if evaluator is not None and self.test_set is not None:                    
+            robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
+            #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
+            loss, accuracy = self.evaluate()
+
+        if os.path.exists(pruned_model_path):
+            shutil.rmtree(pruned_model_path)
+            print("Overwriting existing pruned model ...")
+
+        model.save(pruned_model_path)
+        print(" >>> Pruned model saved")
+
+        # Stop elapsed time counting
+        end_time = time.time()
+        print("Elapsed time: ", round((end_time - start_time)/60.0, 3), "minutes /", int(end_time - start_time), "seconds")
+
+        print("Pruning accomplished")
  

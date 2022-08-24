@@ -292,6 +292,63 @@ def generate_similarity_matrix(interval_list):
     return similarity_matrix
 
 
+def get_filter_weights(model, layer=None):
+    """function to return weights array for one or all layers"""
+    if layer or layer == 0:
+        weight_array = model.layers[layer].get_weights()[0]
+
+    else:
+        # Mark's modification on 14 Jul
+        '''
+        weights = [model.layers[layer_ix].get_weights()[0] for layer_ix in range(len(model.layers))\
+            if 'conv' in model.layers[layer_ix].name and 'conv2d_input' not in model.layers[layer_ix].name]
+        '''
+        weights = []
+        for layer_ix in range(len(model.layers)):
+            if 'conv' in model.layers[layer_ix].name and 'conv2d_input' not in model.layers[layer_ix].name:
+                if model.layers[layer_ix].get_weights():
+                    weights.append(model.layers[layer_ix].get_weights()[0])
+        weight_array = [np.array(i) for i in weights]
+
+    return weight_array
+
+
+def get_filters_l1(model, layer=None):
+    """Returns L1 norm of a Keras model filters at a given layer, if layer=None, returns a matrix of norms"""
+    if layer or layer == 0:
+        weights = get_filter_weights(model, layer)
+        num_filter = len(weights[0, 0, 0, :])
+        print("[DEBUG] Num of filters at layer", layer, "is", num_filter)
+        norms_dict = {}
+        norms = []
+        for i in range(num_filter):
+            l1_norm = np.sum(abs(weights[:, :, :, i]))
+            norms.append(l1_norm)
+    else:
+        weights = get_filter_weights(model)
+        max_kernels = max([layr.shape[3] for layr in weights])
+        norms = np.empty((len(weights), max_kernels))
+        norms[:] = np.NaN
+        for layer_ix in range(len(weights)):
+            # compute norm of the filters
+            kernel_size = weights[layer_ix][:, :, :, 0].size
+            nb_filters = weights[layer_ix].shape[3]
+            kernels = weights[layer_ix]
+            print("[DEBUG] Num of filters at layer", layer, "is", nb_filters)
+            l1 = [np.sum(abs(kernels[:, :, :, i])) for i in range(nb_filters)]
+            # divide by shape of the filters
+            l1 = np.array(l1) / kernel_size
+            norms[layer_ix, :nb_filters] = l1
+    return norms
+
+#find n smallest indices in numpy ndarray
+def smallest_indices(array, N):
+    idx = array.ravel().argsort()[:N]
+    return np.stack(np.unravel_index(idx, array.shape)).T
+
+def biggest_indices(array, N):
+    idx = array.ravel().argsort()[::-1][:N]
+    return np.stack(np.unravel_index(idx, array.shape)).T
 
 def main():
     interval_list_extreme = [(-50,-40), (-4,-3), (30,40), (140,250)]

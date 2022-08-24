@@ -54,5 +54,6 @@ pruner = Pruner(original_model_path,
     seed_val=42)
 
 pruner.load_model(optimizer)
-pruner.prune(evaluator=None)
+#pruner.prune(evaluator=None)
+pruner.prune_cnv(evaluator=None)
 pruner.save_model(pruned_model_path)
