@@ -26,7 +26,6 @@ training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
                                             overwrite=False,
                                             use_relu=True,
                                             optimizer_config=optimizer)
-
 pruned_model_path = 'paoding/models/cifar_10_cnn_pruned'
 
 (train_features, train_labels), (test_features, test_labels) = datasets.cifar10.load_data()
@@ -54,6 +53,6 @@ pruner = Pruner(original_model_path,
     seed_val=42)
 
 pruner.load_model(optimizer)
+pruner.evaluate()
 #pruner.prune(evaluator=None)
-pruner.prune_cnv(evaluator=None)
-pruner.save_model(pruned_model_path)
+pruner.prune_cnv(evaluator=None, save_file=False)

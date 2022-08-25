@@ -647,25 +647,33 @@ def pruning_stochastic(model, big_map, prune_percentage,
     return model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
 
 
-def pruning_conv_scale(model, prune_percentage, layer=None):
+def pruning_conv_scale(model, prune_percentage, layer=None, layer_wise_sampling=1):
     # TO-DO: n_pruned need to be calculated
-    n_pruned = 2
+    n_pruned = 5
+    
+    to_prune = []
+
     if layer or layer==0:
-        norms = utils.get_filters_l1(model,layer)
+        norms, size = utils.get_filters_l1(model,layer)
         to_prune = np.argsort(norms)[:n_pruned]
     
+    elif layer_wise_sampling:
+        norms, size = utils.get_filters_l1(model)
+        N = []
+        for i in size:
+            N.append(math.ceil(i*prune_percentage))
+        to_prune = utils.smallest_indices_layerwise(norms, N)
+                       
     else:
-        norms = utils.get_filters_l1(model)
-        print(" ++++ The l1 norms are:", norms)
+        norms, size = utils.get_filters_l1(model)
+        # print(" ++++ The l1 norms are:", norms)
         to_prune = utils.smallest_indices(norms, n_pruned)
-    
-    print(" +++ FINISHED SAMPLING, to prune", to_prune)
 
     if layer or layer ==0:
         model_pruned = prune_one_layer(model, to_prune, layer)
     else:
         model_pruned = prune_multiple_layers(model, to_prune)
-            
+
     return model_pruned
 
 def prune_one_layer(model, pruned_indexes, layer_ix):
@@ -683,10 +691,10 @@ def prune_multiple_layers(model, pruned_matrix):
     to_prune[:,0] = np.array([conv_indexes[i] for i in to_prune[:,0]])
     layers_to_prune = np.unique(to_prune[:,0])
     for layer_ix in layers_to_prune :
-        print(" +++ PRUNING LAYER", layer_ix, model.layers[layer_ix].name)
+        # print(" +++ PRUNING LAYER", layer_ix, model.layers[layer_ix].name)
         pruned_filters = [x[1] for x in to_prune if x[0]==layer_ix]
         pruned_layer = model.layers[layer_ix]
-        print(" ++++ PRUNING CHANNELS", pruned_filters)
+        print(" >>> Prunning layer", layer_ix, ":", pruned_filters)
         surgeon.add_job('delete_channels', pruned_layer, channels=pruned_filters)
     
     model_pruned = surgeon.operate()

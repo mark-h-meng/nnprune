@@ -232,6 +232,9 @@ class Pruner:
                 stop_condition = True
 
             # Save the pruned model at each checkpoint or after the last pruning epoch
+
+            self.model = model
+            
             if epoch_couter % self.EPOCHS_PER_CHECKPOINT == 0 or stop_condition:
                 curr_pruned_model_path = pruned_model_path + "_ckpt_" + str(math.ceil(epoch_couter/self.EPOCHS_PER_CHECKPOINT))
 
@@ -285,7 +288,7 @@ class Pruner:
 
         print("Pruning accomplished")
 
-    def prune_cnv(self, evaluator=None, pruned_model_path=None):
+    def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
@@ -294,31 +297,35 @@ class Pruner:
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
         
-        if pruned_model_path is None:
+        if save_file and pruned_model_path is None:
             pruned_model_path=self.model_path+"_pruned_conv"
-
-        
-        model = self.model
 
         # Start elapsed time counting
         start_time = time.time()
-        pruning_result_dict = self.sampler.nominate_conv(model, prune_percentage=self.pruning_step)
+        pruning_result_dict = self.sampler.nominate_conv(self.model, prune_percentage=self.pruning_step)
 
-        model = pruning_result_dict['model']
+        self.model = pruning_result_dict['model']
 
-        model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
+        # self.model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
+        self.model.compile(optimizer= tf.keras.optimizers.Adam(learning_rate=0.001), loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'])
+
+        loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)
+        print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+        
         if evaluator is not None and self.test_set is not None:                    
-            robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
-            #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
-            loss, accuracy = self.evaluate()
-
-        if os.path.exists(pruned_model_path):
+            robust_preservation = self.robustness_evaluator.evaluate_robustness(self.model, (test_images, test_labels), self.model_type)
+        
+        if save_file and os.path.exists(pruned_model_path):
             shutil.rmtree(pruned_model_path)
             print("Overwriting existing pruned model ...")
 
-        model.save(pruned_model_path)
-        print(" >>> Pruned model saved")
-
+        if save_file:
+            self.model.save(pruned_model_path)
+            print(" >>> Pruned model saved")
+        else:
+            print(" >>> Pruned model won't be saved unless you set \"save_file\" True")
+            
         # Stop elapsed time counting
         end_time = time.time()
         print("Elapsed time: ", round((end_time - start_time)/60.0, 3), "minutes /", int(end_time - start_time), "seconds")
