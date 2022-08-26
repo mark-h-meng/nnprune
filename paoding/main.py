@@ -10,6 +10,15 @@ from paoding.utility.option import ModelType, SamplingMode
 
 # Hide GPU from visible devices
 tf.config.set_visible_devices([], 'GPU')
+'''
+# Set CPU as available physical device
+my_devices = tf.config.experimental.list_physical_devices(device_type='CPU')
+tf.config.experimental.set_visible_devices(devices= my_devices, device_type='CPU')
+
+# To find out which devices your operations and tensors are assigned to
+tf.debugging.set_log_device_placement(True)
+'''
+
 original_model_path = 'paoding/models/cifar_10_cnn'
 
 (train_features, train_labels), (test_features, test_labels) = datasets.cifar10.load_data()
@@ -28,31 +37,20 @@ training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
                                             optimizer_config=optimizer)
 pruned_model_path = 'paoding/models/cifar_10_cnn_pruned'
 
-(train_features, train_labels), (test_features, test_labels) = datasets.cifar10.load_data()
-# Normalize pixel values to be between 0 and 1
-train_features, test_features = train_features / 255.0, test_features / 255.0
-
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
-
-training_from_data.train_cifar_9_layer_cnn((train_features, train_labels),
-                                            (test_features, test_labels),
-                                            original_model_path,
-                                            overwrite=False,
-                                            use_relu=True,
-                                            optimizer_config=optimizer)
-
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
 pruner = Pruner(original_model_path, 
     (test_features, test_labels), 
-    target=0.2,
-    step=0.025,
+    target=0.05,
+    step=0.05,
     sample_strategy=sampler, 
     model_type=ModelType.CIFAR,
     seed_val=42)
 
 pruner.load_model(optimizer)
-pruner.evaluate()
+
+loss, accuracy = pruner.evaluate()
 pruner.prune(evaluator=None)
 pruner.prune_cnv(evaluator=None, save_file=False)
+

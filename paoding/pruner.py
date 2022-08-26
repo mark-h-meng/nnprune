@@ -8,7 +8,7 @@ __license__ = "MIT"
 import tensorflow as tf
 from numpy.random import seed
 import os, time, csv, shutil, math, time
-from tensorflow.python.eager.monitoring import Sampler
+from pathlib import Path
 
 # Import in-house classes
 from paoding.sampler import Sampler
@@ -17,6 +17,7 @@ from paoding.utility.option import SamplingMode, ModelType
 import paoding.utility.utils as utils
 import paoding.utility.bcolors as bcolors
 import paoding.utility.simulated_propagation as simprop
+import paoding.utility.model_profiler.profiler as profiler
 
 class Pruner:
 
@@ -74,7 +75,7 @@ class Pruner:
 
         # E.g. EPOCHS_PER_CHECKPOINT = 5 means we save the pruned model as a checkpoint after each five
         #    epochs and at the end of pruning
-        self.EPOCHS_PER_CHECKPOINT = 15
+        self.EPOCHS_PER_CHECKPOINT = 1000
         
         self.test_set = test_set
 
@@ -109,7 +110,7 @@ class Pruner:
         self.model.save(path)
         print(" >>> Pruned model saved")
        
-    def evaluate(self, metrics=['accuracy']):
+    def evaluate(self, verbose=0):
         """
         Evaluate the model performance.
         Args: 
@@ -124,9 +125,28 @@ class Pruner:
         test_features, test_labels = self.test_set
         # self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
-        print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+        if verbose > 0:
+            print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
 
+
+    def profile(self):
+        print(profiler.model_profiler(self.model, Batch_size=1))
+
+    def quantization(self):
+        converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
+        tflite_model = converter.convert()
+        tflite_models_dir = Path('paoding/models/temp_tflite_models/')
+        tflite_models_dir.mkdir(exist_ok=True, parents=True)
+        tflite_model_file = tflite_models_dir/"model.tflite"  
+        tflite_model_file.write_bytes(tflite_model)
+        print(" >> Size after pruning:", os.path.getsize(tflite_model_file))
+        converter.optimizations = [tf.lite.Optimize.DEFAULT]
+        converter.target_spec.supported_types = [tf.float16]
+        tflite_fp16_model = converter.convert()
+        tflite_model_fp16_file = tflite_models_dir/"model_quant_f16.tflite"
+        tflite_model_fp16_file.write_bytes(tflite_fp16_model)
+        print(" >> Size after quantization:", os.path.getsize(tflite_model_fp16_file))
 
     def prune(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
         """
@@ -135,13 +155,18 @@ class Pruner:
         evaluator: The evaluation configuration (optional, no evaluation requested by default).
         pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
         """
-        return self.prune_fc(evaluator, save_file, pruned_model_path, verbose)
+        self.prune_fc(evaluator, save_file, pruned_model_path, verbose)
+        self.prune_cnv(evaluator, save_file, pruned_model_path, verbose)
 
-    def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
+    def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
             self.evaluation_batch = evaluator.batch_size
+
+        if model_name is None:
+            model_name = self.model_type.name
+
         test_images, test_labels = self.test_set
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
@@ -209,25 +234,23 @@ class Pruner:
                 if not self.sampler.mode == SamplingMode.BASELINE:
                     if verbose > 0:
                         print(" [DEBUG] Cumulative impact as intervals after this epoch:")
-                    print(cumulative_impact_intervals)
+                        print(cumulative_impact_intervals)
 
                 percentage_been_pruned += self.pruning_step
                 print(" >> Pruning progress:", bcolors.BOLD, str(round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
                 model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
-                loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)
-                print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
-        
+                
                 if evaluator is not None and self.test_set is not None:                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
-                    #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
-                    loss, accuracy = self.evaluate()
 
                     # Update score_board and tape_of_moves
                     score_board.append(robust_preservation)
-                    accuracy_board.append((round(loss, 4), round(accuracy, 4)))
                     print(bcolors.OKGREEN + "[Epoch " + str(epoch_couter) + "]" + str(robust_preservation) + bcolors.ENDC)
 
+                loss, accuracy = self.evaluate()
+                accuracy_board.append((round(loss, 4), round(accuracy, 4)))
+                    
                 tape_of_moves.append(pruned_pairs)
                 pruned_pairs = None
             # Check if have pruned enough number of hidden units
@@ -264,8 +287,7 @@ class Pruner:
         local_time = time.localtime()
         timestamp = time.strftime('%b-%d-%H%M', local_time)
 
-
-        tape_filename = "paoding/logs/chest-" + timestamp + "-" + str(self.evaluation_batch)
+        tape_filename = "paoding/logs/" + model_name + "-" + timestamp + "-" + str(self.evaluation_batch)
         if evaluator is None:
             tape_filename = tape_filename+"-BENCHMARK"
 
@@ -279,13 +301,18 @@ class Pruner:
 
         with open(tape_filename, 'w+', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
-
-            csv_line = [str(eps) for eps in self.target_adv_epsilons]
+            if evaluator is not None:
+                csv_line = [str(eps) for eps in self.target_adv_epsilons]
+            else:
+                csv_line = []
             csv_line.append('moves,loss,accuracy')
             csv_writer.writerow(csv_line)
 
-            for index, item in enumerate(score_board):
-                rob_pres_stat = [item[k] for k in self.target_adv_epsilons]
+            for index, item in enumerate(accuracy_board):
+                if evaluator is not None:
+                    rob_pres_stat = [item[k] for k in self.target_adv_epsilons]
+                else:
+                    rob_pres_stat = []
                 rob_pres_stat.append(tape_of_moves[index])
                 rob_pres_stat.append(accuracy_board[index])
                 csv_writer.writerow(rob_pres_stat)
@@ -293,9 +320,9 @@ class Pruner:
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
-        print("Pruning accomplished")
+        print("Model pruning accomplished")
 
-    def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None):
+    def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
