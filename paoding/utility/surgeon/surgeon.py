@@ -678,8 +678,7 @@ class Surgeon:
             raise ValueError('Channels_index value(s) out of range. '
                              'This layer only has {0} channels.'
                              .format(channel_count))
-        print('Deleting {0}/{1} channels from layer: {2}'.format(
-            len(channel_indices), channel_count, layer.name))
+        #print('Deleting {0}/{1} channels from layer: {2}'.format(len(channel_indices), channel_count, layer.name))
         # numpy.delete ignores negative indices in lists: wrap indices
         channel_indices = [i % channel_count for i in channel_indices]
 

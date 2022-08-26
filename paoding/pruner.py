@@ -91,7 +91,8 @@ class Pruner:
         print(self.model.summary())
         
         if optimizer is None:
-            self.optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
+            self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
+            #self.optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
         else:
             self.optimizer = optimizer
 
@@ -121,21 +122,22 @@ class Pruner:
             return 0, 0
 
         test_features, test_labels = self.test_set
-        # self.model.compile(optimizer=self.optimizer, loss='binary_crossentropy', metrics=metrics)
+        # self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=metrics)
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
         print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         return loss, accuracy
 
-    def prune(self, evaluator=None, pruned_model_path=None):
+
+    def prune(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
         """
         Perform fully connected pruning and save the pruned model to a specified location.
         Args: 
         evaluator: The evaluation configuration (optional, no evaluation requested by default).
         pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
         """
-        return self.prune_fc(evaluator, pruned_model_path)
+        return self.prune_fc(evaluator, save_file, pruned_model_path, verbose)
 
-    def prune_fc(self, evaluator=None, pruned_model_path=None):
+    def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
@@ -144,7 +146,7 @@ class Pruner:
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
         
-        if pruned_model_path is None:
+        if save_file and pruned_model_path is None:
             pruned_model_path=self.model_path+"_pruned"
 
         # Define a list to record each pruning decision
@@ -201,16 +203,21 @@ class Pruner:
 
             if num_pruned_curr_batch == 0:
                 stop_condition = True
-                print(" >> No more hidden unit could be pruned, we stop at EPOCH", epoch_couter)
+                if verbose > 0:
+                    print(" [DEBUG] No more hidden unit could be pruned, we stop at EPOCH", epoch_couter)
             else:
                 if not self.sampler.mode == SamplingMode.BASELINE:
-                    print(" >> Cumulative impact as intervals after this epoch:")
+                    if verbose > 0:
+                        print(" [DEBUG] Cumulative impact as intervals after this epoch:")
                     print(cumulative_impact_intervals)
 
                 percentage_been_pruned += self.pruning_step
                 print(" >> Pruning progress:", bcolors.BOLD, str(round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
-                model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
+                model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+                loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)
+                print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+        
                 if evaluator is not None and self.test_set is not None:                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
                     #loss, accuracy = model.evaluate(test_images, test_labels, verbose=2)
@@ -235,7 +242,7 @@ class Pruner:
 
             self.model = model
             
-            if epoch_couter % self.EPOCHS_PER_CHECKPOINT == 0 or stop_condition:
+            if save_file and (epoch_couter % self.EPOCHS_PER_CHECKPOINT == 0 or stop_condition):
                 curr_pruned_model_path = pruned_model_path + "_ckpt_" + str(math.ceil(epoch_couter/self.EPOCHS_PER_CHECKPOINT))
 
                 if os.path.exists(curr_pruned_model_path):
@@ -302,12 +309,12 @@ class Pruner:
 
         # Start elapsed time counting
         start_time = time.time()
-        pruning_result_dict = self.sampler.nominate_conv(self.model, prune_percentage=self.pruning_step)
+        pruning_result_dict = self.sampler.nominate_conv(self.model, prune_percentage=self.pruning_target)
 
         self.model = pruning_result_dict['model']
 
         # self.model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
-        self.model.compile(optimizer= tf.keras.optimizers.Adam(learning_rate=0.001), loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        self.model.compile(optimizer= self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=['accuracy'])
 
         loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)

@@ -44,7 +44,7 @@ class Sampler:
                      neurons_manipulated=None, saliency_matrix=None,
                      recursive_pruning=False, cumulative_impact_intervals=None,
                      bias_aware=False, pooling_multiplier=2,
-                     target_scores=None):
+                     target_scores=None, verbose=0):
         """
         Nominate and prune the hidden units.
         Args:
@@ -94,8 +94,9 @@ class Sampler:
             if pruned_pairs is not None:
                 for layer, pairs in enumerate(pruned_pairs):
                     if len(pairs) > 0:
-                        print(" >> Pruning", pairs, "at layer", str(layer))
-                        print(" >>   with assessment score ", end=' ')
+                        if verbose > 0:
+                            print(" [DEBUG] Pruning", pairs, "at layer", str(layer))
+                            print("      with assessment score ", end=' ')
                         for pair in pairs:
                             count_pairs_pruned_curr_epoch += 1
                             print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
@@ -116,13 +117,14 @@ class Sampler:
             if pruned_pairs is not None:
                 for layer, pairs in enumerate(pruned_pairs):
                     if len(pairs) > 0:
-                        print(" >> Pruning", pairs, "at layer", str(layer))
-                        print(" >>   with assessment score ", end=' ')
-                        for pair in pairs:
-                            count_pairs_pruned_curr_epoch += 1
-                            print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
-                        print()
-                        print(" >> Updated target scores at this layer:", round(target_scores[layer], 3))
+                        if verbose > 0:
+                            print(" [DEBUG] Pruning", pairs, "at layer", str(layer))
+                            print("      with assessment score ", end=' ')
+                            for pair in pairs:
+                                count_pairs_pruned_curr_epoch += 1
+                                print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                            print()
+                            print(" [DEBUG] Updated target scores at this layer:", round(target_scores[layer], 3))
         
         elif self.mode == SamplingMode.SCALE:
             result = pruning.pruning_scale_only_sparse(model, prune_percentage)
@@ -158,8 +160,6 @@ class Sampler:
         if self.mode_conv == SamplingMode.SCALE:
             result = pruning.pruning_conv_scale(model, prune_percentage)
             (model) = result
-
-            print(" >> Pruning at this layer accomplished.")
 
             result_dict = {
                 'model': model

@@ -46,7 +46,7 @@ sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
 pruner = Pruner(original_model_path, 
     (test_features, test_labels), 
-    target=0.25,
+    target=0.2,
     step=0.025,
     sample_strategy=sampler, 
     model_type=ModelType.CIFAR,
@@ -54,5 +54,5 @@ pruner = Pruner(original_model_path,
 
 pruner.load_model(optimizer)
 pruner.evaluate()
-#pruner.prune(evaluator=None)
+pruner.prune(evaluator=None)
 pruner.prune_cnv(evaluator=None, save_file=False)

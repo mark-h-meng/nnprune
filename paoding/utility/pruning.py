@@ -22,7 +22,8 @@ def pruning_baseline(model, big_map, prune_percentage=None,
                      neurons_manipulated=None,
                      saliency_matrix=None,
                      recursive_pruning=False,
-                     bias_aware=False):
+                     bias_aware=False,
+                     verbose=0):
     # Load the parameters and configuration of the input model
     (w, g) = utils.load_param_and_config(model)
 
@@ -64,7 +65,8 @@ def pruning_baseline(model, big_map, prune_percentage=None,
 
             if saliency_matrix[layer_idx] is None:
 
-                print(" >> Building saliency matrix for layer " +
+                if verbose > 0:
+                    print(" [DEBUG] Building saliency matrix for layer " +
                       str(layer_idx)+"...")
                 if bias_aware:
                     # w[layer_idx][1] records the bias per each neuron in the current layer
@@ -75,8 +77,9 @@ def pruning_baseline(model, big_map, prune_percentage=None,
                     saliency_matrix[layer_idx] = saliency.build_saliency_matrix(curr_weights_neuron_as_rows,
                                                                                 next_weights_neuron_as_rows)
             else:
-                print(
-                    " >> Skip building saliency matrix: saliency matrix for layer", layer_idx, "exists.")
+                if verbose > 0:
+                    print(" [DEBUG] Skip building saliency matrix: saliency matrix for layer", 
+                        layer_idx, "exists.")
 
             import pandas as pd
             df = pd.DataFrame(data=saliency_matrix[layer_idx])
@@ -147,7 +150,8 @@ def pruning_greedy(model, big_map, prune_percentage,
                    hyperparamters=(0.5, 0.5),
                    recursive_pruning=True,
                    bias_aware=False,
-                   kaggle_credit=False):
+                   kaggle_credit=False,
+                   verbose=0):
     # Load the parameters and configuration of the input model
     (w, g) = utils.load_param_and_config(model)
 
@@ -192,8 +196,9 @@ def pruning_greedy(model, big_map, prune_percentage,
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
             next_weights_neuron_as_rows = w[layer_idx + 1][0]
 
-            print(" >> Building saliency matrix for layer " +
-                  str(layer_idx) + "...")
+            if verbose > 0:
+                print(" [DEBUG] Building saliency matrix for layer " +
+                    str(layer_idx) + "...")
             if bias_aware:
                 # w[layer_idx][1] records the bias per each neuron in the current layer
                 e_ij_matrix[layer_idx] = saliency.build_saliency_matrix_with_bias(curr_weights_neuron_as_rows,
@@ -356,9 +361,10 @@ def pruning_greedy(model, big_map, prune_percentage,
 
         layer_idx += 1
 
-    print(" >> DEBUG: size of cumulative impact total",
+    if verbose > 0:
+        print(" [DEBUG] Size of cumulative impact total",
           len(cumulative_impact_intervals))
-    print("Pruning accomplished -", total_pruned_count, "units have been pruned")
+    print(" >> Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
 
 
@@ -369,7 +375,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
                        hyperparamters=(0.5, 0.5),
                        recursive_pruning=True,
                        bias_aware=False,
-                       kaggle_credit=False):
+                       kaggle_credit=False,
+                       verbose=0):
     # Load the parameters and configuration of the input model
     (w, g) = utils.load_param_and_config(model)
 
@@ -421,7 +428,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
             next_weights_neuron_as_rows = w[layer_idx + 1][0]
 
-            print(" >> Building saliency matrix for layer " +
+            if verbose > 0:
+                print(" [DEBUG] Building saliency matrix for layer " +
                   str(layer_idx) + "...")
             if bias_aware:
                 # w[layer_idx][1] records the bias per each neuron in the current layer
@@ -527,9 +535,10 @@ def pruning_stochastic(model, big_map, prune_percentage,
                             count += 1
                             pruning_pairs_dict_overall_scores[layer_idx][(
                                 node_a, node_b)] = target_scores[layer_idx]
-
-                            print(" [DEBUG]", bcolors.OKGREEN, "Accepting",
-                                  bcolors.ENDC, (node_a, node_b), curr_score)
+                            
+                            if verbose > 0:
+                                print(" [DEBUG]", bcolors.OKGREEN, "Accepting",
+                                    bcolors.ENDC, (node_a, node_b), curr_score)
 
                         # Then we use simulated annealing algorithm to determine if we accept the next pair in the pruning list
                         else:
@@ -565,12 +574,14 @@ def pruning_stochastic(model, big_map, prune_percentage,
                                 pruning_pairs_dict_overall_scores[layer_idx][(
                                     node_a, node_b)] = curr_score
 
-                                print(" [DEBUG]", bcolors.OKGREEN, "Accepting (stochastic)", bcolors.ENDC, (node_a, node_b), "despite the score",
-                                      round(curr_score, 6), "because the probability", round(prob_random, 6), "<=", round(prob_sim_annealing, 6))
+                                if verbose > 0:
+                                    print(" [DEBUG]", bcolors.OKGREEN, "Accepting (stochastic)", bcolors.ENDC, (node_a, node_b), "despite the score",
+                                        round(curr_score, 6), "because the probability", round(prob_random, 6), "<=", round(prob_sim_annealing, 6))
 
                             else:
-                                print(" [DEBUG]", bcolors.FAIL, "Reject", bcolors.ENDC, (node_a, node_b), "because the score",
-                                      round(curr_score, 6), ">", round(target_scores[layer_idx], 6), "and random prob. doesn't satisfy", round(prob_sim_annealing, 6))
+                                if verbose > 0:
+                                    print(" [DEBUG]", bcolors.FAIL, "Reject", bcolors.ENDC, (node_a, node_b), "because the score",
+                                        round(curr_score, 6), ">", round(target_scores[layer_idx], 6), "and random prob. doesn't satisfy", round(prob_sim_annealing, 6))
                                 # Drop that pair from the neurons_manipulated list and enable re-considering in future epoch
                                 if node_b in neurons_manipulated[layer_idx]:
                                     neurons_manipulated[layer_idx].remove(
@@ -609,9 +620,6 @@ def pruning_stochastic(model, big_map, prune_percentage,
                                                                                                       cumul_impact_ints_curr_layer,
                                                                                                       layer_idx+1))
 
-            # print(" >> DEBUG: len(cumulative_impact_curr_layer_pruning_to_next_layer):", len(cumul_impact_ints_curr_layer))
-            # print(" >> DEBUG: len(cumulative_impact_to_output_layer):", len(cumulative_impact_intervals))
-
             # Now let's do pruning (simulated, by zeroing out weights but keeping neurons in the network)
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
                 # Change all weight connecting from node_b to the next layers as the sum of node_a and node_b's ones
@@ -641,7 +649,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
         layer_idx += 1
 
-    print(" >> DEBUG: size of cumulative impact total",
+    if verbose > 0:
+        print(" [DEBUG] size of cumulative impact total",
           len(cumulative_impact_intervals))
     print("Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
@@ -694,7 +703,7 @@ def prune_multiple_layers(model, pruned_matrix):
         # print(" +++ PRUNING LAYER", layer_ix, model.layers[layer_ix].name)
         pruned_filters = [x[1] for x in to_prune if x[0]==layer_ix]
         pruned_layer = model.layers[layer_ix]
-        print(" >>> Prunning layer", layer_ix, ":", pruned_filters)
+        print(" >>> Prunning layer", layer_ix, "(" + model.layers[layer_ix].name + "):", pruned_filters)
         surgeon.add_job('delete_channels', pruned_layer, channels=pruned_filters)
     
     model_pruned = surgeon.operate()

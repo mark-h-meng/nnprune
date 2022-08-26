@@ -313,12 +313,13 @@ def get_filter_weights(model, layer=None):
     return weight_array
 
 
-def get_filters_l1(model, layer=None):
+def get_filters_l1(model, layer=None, verbose=0):
     """Returns L1 norm of a Keras model filters at a given layer, if layer=None, returns a matrix of norms"""
     if layer or layer == 0:
         weights = get_filter_weights(model, layer)
         num_filter = len(weights[0, 0, 0, :])
-        print("[DEBUG] Num of filters at layer", layer, "is", num_filter)
+        if verbose > 0:
+            print("[DEBUG] Num of filters at layer", layer, "is", num_filter)
         norms_dict = {}
         norms = []
         size = [num_filter]
@@ -336,7 +337,8 @@ def get_filters_l1(model, layer=None):
             kernel_size = weights[layer_ix][:, :, :, 0].size
             nb_filters = weights[layer_ix].shape[3]
             kernels = weights[layer_ix]
-            print("[DEBUG] Num of filters at layer", layer, "is", nb_filters)
+            if verbose > 0:
+                print("[DEBUG] Num of filters at layer", layer, "is", nb_filters)
             size.append(nb_filters)
             l1 = [np.sum(abs(kernels[:, :, :, i])) for i in range(nb_filters)]
             # divide by shape of the filters
