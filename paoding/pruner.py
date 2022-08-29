@@ -9,6 +9,7 @@ import tensorflow as tf
 from numpy.random import seed
 import os, time, csv, shutil, math, time
 from pathlib import Path
+from datetime import datetime
 
 # Import in-house classes
 from paoding.sampler import Sampler
@@ -24,6 +25,7 @@ class Pruner:
     constant = 0
     model = None
     optimizer = None
+    loss = None
     sampler = None
     robustness_evaluator = None
     model_path = None
@@ -82,7 +84,7 @@ class Pruner:
         (self.lo_bound, self.hi_bound) = input_interval
         #self.first_mlp_layer_size = first_mlp_layer_size
 
-    def load_model(self, optimizer=None):
+    def load_model(self, optimizer=None, loss=None):
         """
         Load the model.
         Args: 
@@ -96,6 +98,11 @@ class Pruner:
             #self.optimizer = tf.keras.optimizers.RMSprop(learning_rate=0.01)
         else:
             self.optimizer = optimizer
+
+        if loss is None:
+            self.loss = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+        else:
+            self.loss = loss
 
     def save_model(self, path):
         """
@@ -123,10 +130,11 @@ class Pruner:
             return 0, 0
 
         test_features, test_labels = self.test_set
-        # self.model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=metrics)
+        startTime = datetime.now()
         loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
+        elapsed = datetime.now() - startTime
         if verbose > 0:
-            print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+            print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss, "[Elapsed Time]", elapsed)   
         return loss, accuracy
 
 
@@ -148,14 +156,14 @@ class Pruner:
         tflite_model_fp16_file.write_bytes(tflite_fp16_model)
         print(" >> Size after quantization:", os.path.getsize(tflite_model_fp16_file))
 
-    def prune(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
+    def prune(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None):
         """
         Perform fully connected pruning and save the pruned model to a specified location.
         Args: 
         evaluator: The evaluation configuration (optional, no evaluation requested by default).
         pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
         """
-        self.prune_fc(evaluator, save_file, pruned_model_path, verbose)
+        self.prune_fc(evaluator, save_file, pruned_model_path, verbose, model_name)
         self.prune_cnv(evaluator, save_file, pruned_model_path, verbose)
 
     def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None):
@@ -237,9 +245,10 @@ class Pruner:
                         print(cumulative_impact_intervals)
 
                 percentage_been_pruned += self.pruning_step
+                print(" >> Pruned", num_pruned_curr_batch, "hidden units in this epoch")
                 print(" >> Pruning progress:", bcolors.BOLD, str(round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
-                model.compile(optimizer=self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+                model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
                 
                 if evaluator is not None and self.test_set is not None:                    
                     robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
@@ -340,8 +349,7 @@ class Pruner:
 
         self.model = pruning_result_dict['model']
 
-        # self.model.compile(optimizer="rmsprop", loss='binary_crossentropy', metrics=['accuracy'])
-        self.model.compile(optimizer= self.optimizer, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        self.model.compile(optimizer= self.optimizer, loss=self.loss,
                       metrics=['accuracy'])
 
         loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)

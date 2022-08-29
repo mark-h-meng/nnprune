@@ -328,6 +328,9 @@ def get_filters_l1(model, layer=None, verbose=0):
             norms.append(l1_norm)
     else:
         weights = get_filter_weights(model)
+        if len(weights) == 0:
+            # No conv layer to be pruned
+            return None, 0
         max_kernels = max([layr.shape[3] for layr in weights])
         norms = np.empty((len(weights), max_kernels))
         norms[:] = np.NaN

@@ -657,7 +657,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
 
 def pruning_conv_scale(model, prune_percentage, layer=None, layer_wise_sampling=1):
-    # TO-DO: n_pruned need to be calculated
+    # TO-DO: n_pruned need to be calculated, currently we only use layer wise mode
     n_pruned = 5
     
     to_prune = []
@@ -668,6 +668,9 @@ def pruning_conv_scale(model, prune_percentage, layer=None, layer_wise_sampling=
     
     elif layer_wise_sampling:
         norms, size = utils.get_filters_l1(model)
+        if norms is None:
+            print(" >> No conv layers available to prune")
+            return model
         N = []
         for i in size:
             N.append(math.ceil(i*prune_percentage))
