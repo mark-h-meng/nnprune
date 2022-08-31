@@ -129,9 +129,8 @@ class Pruner:
             print("Test set not provided, evaluation aborted...")
             return 0, 0
 
-        test_features, test_labels = self.test_set
         startTime = datetime.now()
-        loss, accuracy = self.model.evaluate(test_features, test_labels, verbose=2)
+        loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
         elapsed = datetime.now() - startTime
         if verbose > 0:
             print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss, "[Elapsed Time]", elapsed)   
@@ -174,8 +173,7 @@ class Pruner:
 
         if model_name is None:
             model_name = self.model_type.name
-
-        test_images, test_labels = self.test_set
+            
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
         
@@ -251,7 +249,7 @@ class Pruner:
                 model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
                 
                 if evaluator is not None and self.test_set is not None:                    
-                    robust_preservation = self.robustness_evaluator.evaluate_robustness(model, (test_images, test_labels), self.model_type)
+                    robust_preservation = self.robustness_evaluator.evaluate_robustness(model, self.test_set, self.model_type)
 
                     # Update score_board and tape_of_moves
                     score_board.append(robust_preservation)
@@ -329,14 +327,14 @@ class Pruner:
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
-        print("Model pruning accomplished")
+        print("FC pruning accomplished")
 
     def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
             self.evaluation_batch = evaluator.batch_size
-        test_images, test_labels = self.test_set
+
         utils.create_dir_if_not_exist("paoding/logs/")
         # utils.create_dir_if_not_exist("paoding/save_figs/")
         
@@ -352,11 +350,14 @@ class Pruner:
         self.model.compile(optimizer= self.optimizer, loss=self.loss,
                       metrics=['accuracy'])
 
-        loss, accuracy = self.model.evaluate(test_images, test_labels, verbose=2)
-        print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+        print("CONV pruning accomplished")
+
+        if self.test_set is not None:
+            loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
+            print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
         
         if evaluator is not None and self.test_set is not None:                    
-            robust_preservation = self.robustness_evaluator.evaluate_robustness(self.model, (test_images, test_labels), self.model_type)
+            robust_preservation = self.robustness_evaluator.evaluate_robustness(self.model, self.test_set, self.model_type)
         
         if save_file and os.path.exists(pruned_model_path):
             shutil.rmtree(pruned_model_path)
