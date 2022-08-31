@@ -91,18 +91,18 @@ def calculate_impact_of_pruning_next_layer(model, big_map, pruning_pairs, loc, c
             # approximate the result of (a-b)
             (a_minus_b_lo, a_minus_b_hi) = ia.interval_minus((a_lo, a_hi), (b_lo, b_hi))
             w_a = w[loc + 1][0][a]
-            if len(w_a) is not next_layer_size:
+            if len(w_a) != next_layer_size:
                 raise Exception("Inconsistent size of parameters")
 
             impact_to_next_layer = [ia.interval_scale((a_minus_b_lo, a_minus_b_hi), k) for k in w_a]
         else:
             w_a = w[loc + 1][0][a]
-            if len(w_a) is not next_layer_size:
+            if len(w_a) != next_layer_size:
                 raise Exception("Inconsistent size of parameters")
 
             impact_to_next_layer = [ia.interval_scale((a_lo, a_hi), -1*k) for k in w_a]
 
-        if len(impact_to_next_layer) is not next_layer_size:
+        if len(impact_to_next_layer) != next_layer_size:
             raise Exception("Inconsistent size of parameters")
 
         for index, interval in enumerate(cumulative_next_layer_intervals):
