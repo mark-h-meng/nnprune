@@ -621,6 +621,9 @@ def pruning_stochastic(model, big_map, prune_percentage,
                                                                                                       layer_idx+1))
 
             # Now let's do pruning (simulated, by zeroing out weights but keeping neurons in the network)
+            ## You can set the pruning configuration to (really) cut the unit off from the model, but not at this stage, 
+            ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting 
+            ##   operation will be perform at the end, if enabled.
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
                 # Change all weight connecting from node_b to the next layers as the sum of node_a and node_b's ones
                 #    & Reset all weight connecting from node_a to ZEROs
