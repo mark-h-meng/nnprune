@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 
 def train_brain_cnn(train_data, test_data, path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
-                            epochs=30):
+                            epochs=20):
     
     # Let's start building a model
     if not os.path.exists(path) or overwrite:
@@ -35,24 +35,24 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
         model = models.Sequential([
             
             layers.Conv2D(32,kernel_size=filter_size,activation='relu',input_shape=(img_size,img_size,1)),
-            layers.BatchNormalization(),
+            #layers.BatchNormalization(),
             layers.MaxPooling2D(pool_size=(2,2)),
-            layers.Dropout(.2),
+            #layers.Dropout(.2),
             
             layers.Conv2D(64,kernel_size=filter_size,activation='relu'),
-            layers.BatchNormalization(),
+            #layers.BatchNormalization(),
             layers.MaxPooling2D(pool_size=(2,2)),
-            layers.Dropout(.2),
+            #layers.Dropout(.2),
             
             layers.Conv2D(128,kernel_size=filter_size,activation='relu'),
-            layers.BatchNormalization(),
+            #layers.BatchNormalization(),
             layers.MaxPooling2D(pool_size=(2,2)),
-            layers.Dropout(.2),
+            #layers.Dropout(.2),
 
             layers.Conv2D(128,kernel_size=filter_size,activation='relu'),
-            layers.BatchNormalization(),
+            #layers.BatchNormalization(),
             layers.MaxPooling2D(pool_size=(2,2)),
-            layers.Dropout(.2),
+            #layers.Dropout(.2),
             
             layers.Flatten(),
             layers.Dense(512,activation='relu'),
@@ -134,7 +134,7 @@ test_generator=train_datagen.flow_from_directory(
 
 train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
                     optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
-                    epochs=30)
+                    epochs=20)
 
 model_name = "M"
 
@@ -143,8 +143,8 @@ sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
 pruner = Pruner(model_path,
         test_generator,
-        target=0.1,
-        step=0.1,
+        target=0.005,
+        step=0.005,
         sample_strategy=sampler,
         model_type=ModelType.CIFAR,
         seed_val=42)

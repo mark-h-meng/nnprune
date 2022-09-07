@@ -46,16 +46,22 @@ def trim_weights(model, pruned_pairs):
             cut_list_curr_layer = []
             for (node_a, node_b) in pairs_at_layer:
                 cut_list_curr_layer.append(node_b)
-            cut_list_curr_layer.sort()
+            # We sort in reverse order to cut from larg index to small index, thus after each time we cut
+            ##  we do not need to re-index the np arrays.
+            cut_list_curr_layer.sort(reverse=True)
             cut_list_entire_model.append(len(cut_list_curr_layer))
+            
+            size_prev_layer = len(w[layer_idx][0][0])
+            assert cut_list_curr_layer[0] < size_prev_layer, "The largest index of hidden unit (" + str(cut_list_curr_layer[0]) + \
+                            ") to cut is not smaller than the size of curr layer (" + \
+                                str(size_prev_layer) + ")"
 
             for node in cut_list_curr_layer:
                 # Now let's remove the "node_b" hidden unit at the current layer
                 ## Cut the connections in the current layer
                 list_new_w_layer_idx_0 = []
+
                 for index, prev_layer_unit in enumerate(w[layer_idx][0]):
-                    assert node < len(
-                        prev_layer_unit), "The index of hidden unit to cut is larger than the size of curr layer"
                     list_new_w_layer_idx_0.append(np.delete(prev_layer_unit, node, 0))
 
                 assert len(w[layer_idx][0]) == len(list_new_w_layer_idx_0), \
@@ -82,8 +88,6 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
 
     new_weights, config, cut_list = trim_weights(original_model, pruned_list)
 
-    (x_test, y_test) = test_set
-
     pruned_model = tf.keras.models.Sequential()
 
     for layer_idx, layer_config in enumerate(config):
@@ -91,6 +95,8 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
         if layer_idx == 0:
             if 'flatten' in config[layer_idx]['name']:
                 pruned_model.add(tf.keras.layers.Flatten(input_shape=config[0]['batch_input_shape'][1:]))
+            elif 'conv2d_input' in config[layer_idx]['name']:
+                pruned_model.add(tf.keras.layers.InputLayer(input_shape=config[0]['batch_input_shape'][1:]))
             elif 'conv2d' in config[layer_idx]['name']:
                 pruned_model.add(tf.keras.layers.Conv2D(config[layer_idx]['filters'],
                                                         kernel_size=config[layer_idx]['kernel_size'],
@@ -99,6 +105,13 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
                                                         padding=config[0]['padding'],
                                                         strides=config[0]['strides'],
                                                         trainable=False))
+            elif 'dense' in config[layer_idx]['name']:
+                pruned_model.add(tf.keras.layers.Dense(config[layer_idx]['units'] - cut_list[layer_idx],
+                                                   input_shape=config[0]['batch_input_shape'][1:],
+                                                   activation=config[layer_idx]['activation'],
+                                                   trainable=False))
+            else:
+                print("Unable to construct layer", layer_idx, "due to incompatible layer type")
         else:
             if 'dense' in config[layer_idx]['name']:
                 pruned_model.add(tf.keras.layers.Dense(config[layer_idx]['units'] - cut_list[layer_idx],
@@ -121,14 +134,28 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
                 print("Unable to construct layer", layer_idx, "due to incompatible layer type")
 
     loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    
+    is_first_layer_input = False 
+    if "conv2d_input" in original_model.layers[0].name:
+        is_first_layer_input = True
 
     for index, layer in enumerate(pruned_model.layers):
-        layer.set_weights(new_weights[index])
-
+        if not "dense" in layer.name:
+            print("Setting the original weights to layer", index, layer.name)
+            if is_first_layer_input:
+                layer.set_weights(original_model.layers[index + 1].get_weights())
+            else:
+                layer.set_weights(original_model.layers[index].get_weights())
+            
+        else:
+            print("Setting the pruned weights to layer", index, layer.name)
+            if is_first_layer_input:
+                layer.set_weights(new_weights[index + 1])
+            else:
+                layer.set_weights(new_weights[index])
+                    
     pruned_model.compile(optimizer='adam',
                          loss=loss_fn,
                          metrics=['accuracy'])
     print(pruned_model.summary())
-    loss, accuracy = pruned_model.evaluate(x_test, y_test)
-    print(loss, accuracy)
     pruned_model.save(path)

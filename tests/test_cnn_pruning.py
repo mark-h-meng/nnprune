@@ -47,7 +47,9 @@ class TestFullStoryCIFAR(unittest.TestCase):
         pruner.load_model(optimizer)
 
         pruner.prune(evaluator=None)
-        pruner.prune_cnv(evaluator=None, save_file=False)
+
+        dot_img_file = original_model_path + '.png'
+        tf.keras.utils.plot_model(pruner.model, to_file=dot_img_file, show_shapes=True)
 
 if __name__ == '__main__':
     unittest.main()

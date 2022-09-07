@@ -283,18 +283,23 @@ else:
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-pruner = Pruner(model_path,
-        (x_test, y_test),
-        target=0.5,
-        step=0.03125,
-        sample_strategy=sampler,
-        model_type=ModelType.CIFAR,
-        seed_val=42)
+target = 0.5
+step = 0.03125
+while target <= 0.5:
+    pruner = Pruner(model_path,
+            (x_test, y_test),
+            target=target,
+            step=step,
+            sample_strategy=sampler,
+            model_type=ModelType.OTHER)
+            #seed_val=42)
 
-pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
+    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
-pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
 
-pruner.prune(evaluator=None, model_name=model_name)
+    pruner.prune(evaluator=None, model_name=model_name+"_"+str(target))
 
-pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
+    target += step
+    pruner.gc()

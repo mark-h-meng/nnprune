@@ -624,15 +624,22 @@ def pruning_stochastic(model, big_map, prune_percentage,
             ## You can set the pruning configuration to (really) cut the unit off from the model, but not at this stage, 
             ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting 
             ##   operation will be perform at the end, if enabled.
+            
+            output_str = " >>> Pruning layer " + str(layer_idx) + " (" + model.layers[layer_idx].name + "): ["
+            output_str_prune_items = []
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
                 # Change all weight connecting from node_b to the next layers as the sum of node_a and node_b's ones
                 #    & Reset all weight connecting from node_a to ZEROs
                 # RECALL: next_weights_neuron_as_rows = w[layer_idx+1][0] ([0] for weight and [1] for bias)
+                output_str_prune_items.append(str(node_b) + "->" + str(node_a))
                 for i in range(0, num_next_neurons):
                     w[layer_idx + 1][0][node_a][i] = w[layer_idx +
                                                        1][0][node_b][i] + w[layer_idx + 1][0][node_a][i]
                     w[layer_idx + 1][0][node_b][i] = 0
                 total_pruned_count += 1
+            output_str += ",".join(output_str_prune_items)
+            output_str += "]"
+            print(output_str)
             # Save the modified parameters to the model
             model.layers[layer_idx + 1].set_weights(w[layer_idx + 1])
 

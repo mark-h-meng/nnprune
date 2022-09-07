@@ -10,6 +10,7 @@ from numpy.random import seed
 import os, time, csv, shutil, math, time
 from pathlib import Path
 from datetime import datetime
+import numpy as np
 
 # Import in-house classes
 from paoding.sampler import Sampler
@@ -19,6 +20,7 @@ import paoding.utility.utils as utils
 import paoding.utility.bcolors as bcolors
 import paoding.utility.simulated_propagation as simprop
 import paoding.utility.model_profiler.profiler as profiler
+import paoding.utility.dense_layer_surgeon as surgeon
 
 class Pruner:
 
@@ -117,6 +119,7 @@ class Pruner:
         self.model.save(path)
         print(" >>> Pruned model saved")
        
+    
     def evaluate(self, verbose=0):
         """
         Evaluate the model performance.
@@ -128,17 +131,25 @@ class Pruner:
         if self.test_set is None:
             print("Test set not provided, evaluation aborted...")
             return 0, 0
-
-        startTime = datetime.now()
-        loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
-        elapsed = datetime.now() - startTime
+        
+        # In case some test set is not simply a tuple, but a tensorflow DirectoryIterator, we need to directly
+        ## feed the test_set into the evaluation function
+        if type(self.test_set) is tuple:
+            t_features, t_labels = self.test_set
+            startTime = datetime.now()
+            loss, accuracy = self.model.evaluate(t_features, t_labels, verbose=2)
+            elapsed = datetime.now() - startTime
+        else:
+            startTime = datetime.now()
+            loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
+            elapsed = datetime.now() - startTime
         if verbose > 0:
             print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss, "[Elapsed Time]", elapsed)   
         return loss, accuracy
 
-
     def profile(self):
         print(profiler.model_profiler(self.model, Batch_size=1))
+
 
     def quantization(self):
         converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
@@ -162,8 +173,9 @@ class Pruner:
         evaluator: The evaluation configuration (optional, no evaluation requested by default).
         pruned_model_path: The location to save the pruned model (optional, a fixed path by default).
         """
-        self.prune_fc(evaluator, save_file, pruned_model_path, verbose, model_name)
+        
         self.prune_cnv(evaluator, save_file, pruned_model_path, verbose)
+        self.prune_fc(evaluator, save_file, pruned_model_path, verbose, model_name)
 
     def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None):
         if evaluator is not None:
@@ -208,7 +220,8 @@ class Pruner:
         start_time = time.time()
 
         while(not stop_condition):
-
+            
+            pruned_pairs = None
             pruning_result_dict = self.sampler.nominate(model,big_map, 
                                                 prune_percentage=self.pruning_step,
                                                 cumulative_impact_intervals=cumulative_impact_intervals,
@@ -255,11 +268,10 @@ class Pruner:
                     score_board.append(robust_preservation)
                     print(bcolors.OKGREEN + "[Epoch " + str(epoch_couter) + "]" + str(robust_preservation) + bcolors.ENDC)
 
-                loss, accuracy = self.evaluate()
+                loss, accuracy = self.evaluate(verbose=1)
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
                     
                 tape_of_moves.append(pruned_pairs)
-                pruned_pairs = None
             # Check if have pruned enough number of hidden units
             if self.sampler.mode == SamplingMode.BASELINE and percentage_been_pruned >= 0.5:
                 print(" >> Maximum pruning percentage has been reached")
@@ -269,8 +281,6 @@ class Pruner:
                 stop_condition = True
 
             # Save the pruned model at each checkpoint or after the last pruning epoch
-
-            self.model = model
             
             if save_file and (epoch_couter % self.EPOCHS_PER_CHECKPOINT == 0 or stop_condition):
                 curr_pruned_model_path = pruned_model_path + "_ckpt_" + str(math.ceil(epoch_couter/self.EPOCHS_PER_CHECKPOINT))
@@ -327,6 +337,11 @@ class Pruner:
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
+        
+        self.model = model
+        final_model_path = self.model_path+"_pruned_surgery"
+        surgeon.create_pruned_model(model, pruned_pairs, self.test_set, final_model_path)
+
         print("FC pruning accomplished")
 
     def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
@@ -353,8 +368,7 @@ class Pruner:
         print("CONV pruning accomplished")
 
         if self.test_set is not None:
-            loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
-            print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss)   
+            self.evaluate(verbose=1)
         
         if evaluator is not None and self.test_set is not None:                    
             robust_preservation = self.robustness_evaluator.evaluate_robustness(self.model, self.test_set, self.model_type)
@@ -374,4 +388,15 @@ class Pruner:
         print("Elapsed time: ", round((end_time - start_time)/60.0, 3), "minutes /", int(end_time - start_time), "seconds")
 
         print("Pruning accomplished")
+    
+    
+    def gc(self):
+        self.path = None
+        self.test_set=None
+        self.target=0.5
+        self.step=0.025
+        self.sample_strategy=None 
+        self.input_interval=(0,1)
+        self.model_type=ModelType.XRAY 
+        self.seed_val=None
  
