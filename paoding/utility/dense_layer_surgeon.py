@@ -77,7 +77,7 @@ def trim_weights(model, pruned_pairs):
     return w, g, cut_list_entire_model
 
 
-def create_pruned_model(original_model, pruned_list, test_set, path):
+def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_fn=None):
     # Let's start building a model
     if os.path.exists(path):
         if os.path.isdir(path):
@@ -133,8 +133,11 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
             else:
                 print("Unable to construct layer", layer_idx, "due to incompatible layer type")
 
-    loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
-    
+    if loss_fn is None:
+        loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
+    if optimizer is None:
+        optimizer = 'adam'
+
     is_first_layer_input = False 
     if "conv2d_input" in original_model.layers[0].name:
         is_first_layer_input = True
@@ -154,8 +157,9 @@ def create_pruned_model(original_model, pruned_list, test_set, path):
             else:
                 layer.set_weights(new_weights[index])
                     
-    pruned_model.compile(optimizer='adam',
+    pruned_model.compile(optimizer=optimizer,
                          loss=loss_fn,
                          metrics=['accuracy'])
     print(pruned_model.summary())
     pruned_model.save(path)
+    return pruned_model
