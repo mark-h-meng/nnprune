@@ -1,7 +1,7 @@
 
 from paoding.pruner import Pruner
 from paoding.sampler import Sampler
-import os, shutil
+import os, shutil, time
 
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.models import Sequential, Model
@@ -136,23 +136,25 @@ train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
                     optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
                     epochs=20)
 
-model_name = "M"
+model_name = "MRI"
 
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
 pruner = Pruner(model_path,
         test_generator,
-        target=0.005,
-        step=0.005,
+        target=0.5,
+        step=0.05,
         sample_strategy=sampler,
         model_type=ModelType.CIFAR,
-        seed_val=42)
+        stepwise_cnn_pruning=True)
 
 pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
                     loss = 'sparse_categorical_crossentropy')
 
 pruner.evaluate(verbose=1)
+model_path += "_pruned"
+pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
 
-pruner.prune(evaluator=None, model_name=model_name)
 pruner.evaluate(verbose=1)
+pruner.gc()

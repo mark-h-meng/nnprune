@@ -5,6 +5,7 @@ __credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
 __license__ = "MIT"
 
 import tensorflow as tf
+from tensorflow.keras.utils import to_categorical
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.callbacks import ReduceLROnPlateau
@@ -17,7 +18,8 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import cv2
-from tensorflow.python.keras import activations
+# VGG19 Model 
+from tensorflow.keras.applications.vgg19 import VGG19
 
 # Quick fix to encounter memory growth issue when working on shared GPU workstation
 physical_devices = tf.config.list_physical_devices('GPU')
@@ -128,53 +130,6 @@ def load_data_creditcard_from_csv(data_path):
     test_features = np.clip(test_features, -5, 5)
     return (train_features, train_labels), (test_features, test_labels)
 
-'''
-def unpickle(file):
-    import pickle
-    with open(file, 'rb') as fo:
-        dict = pickle.load(fo, encoding='latin1')
-    return dict
-
-def load_data_cifar100(data_path):
-    # File paths
-    data_train_path = data_path + 'train'
-    data_test_path = data_path + 'test'
-    data_meta_path = data_path + 'meta'
-
-    # Read dictionary
-    data_train = unpickle(data_train_path)
-    data_test = unpickle(data_test_path)
-    data_meta = unpickle(data_meta_path)
-
-    subCategory = pd.DataFrame(data_meta['fine_label_names'], columns=['SubClass'])
-    subCategoryDict = subCategory.to_dict()
-    
-    superCategory = pd.DataFrame(data_meta['coarse_label_names'], columns=['SuperClass'])
-    superCategoryDict = superCategory.to_dict()
-
-    X_train = data_train['data']
-    y_train=data_train['fine_labels']
-
-    # Usaremos 20% de la data de entrenamiento para validar el desempeño de la red en cada epoch.
-    X_train, X_valid, y_train, y_valid = train_test_split(X_train, y_train, train_size=0.8)
-
-    X_train = X_train.reshape(len(X_train),3,32,32).transpose(0,2,3,1)
-    X_valid = X_valid.reshape(len(X_valid),3,32,32).transpose(0,2,3,1)
-
-    #transforming the testing dataset
-    X_test = data_test['data']
-    X_test = X_test.reshape(len(X_test),3,32,32).transpose(0,2,3,1)
-    y_test = data_test['fine_labels']
-
-    X_train = np.asarray(X_train)
-    y_train = np.asarray(y_train)
-    X_valid = np.asarray(X_valid)
-    y_valid = np.asarray(y_valid)
-    X_test = np.asarray(X_test)
-    y_test = np.asarray(y_test)
-
-    return (X_train, y_train), (X_test, y_test), (X_valid, y_valid), (subCategoryDict, superCategoryDict)
-'''
 
 def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
@@ -234,14 +189,7 @@ def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
         test_loss, test_accuracy = baseline_results[0], baseline_results[-4]
 
         test_predictions_baseline = model.predict(test_features, batch_size=BATCH_SIZE)
-        '''
-        cm = confusion_matrix(test_labels, test_predictions_baseline > 0.5)
-        plt.figure(figsize=(5, 5))
-        sns.heatmap(cm, annot=True, fmt="d")
-        plt.title('Confusion matrix @{:.2f}'.format(0.5))
-        plt.ylabel('Actual label')
-        plt.xlabel('Predicted label')
-        '''
+        
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
@@ -724,21 +672,69 @@ def train_cifar_6_layer_mlp(train_data, test_data, path, overwrite=False,
     else:
         print("Model found, there is no need to re-train the model ...")
 
-'''
-if __name__ == "__main__":
-    dataset = 'xray'
 
-    if dataset == 'credit':
-        model_path = 'tf_codes/models/kaggle_mlp_3_layer'
-        data_path = "tf_codes/input/kaggle/creditcard.csv"
-        train_data, test_data = load_data_creditcard_from_csv(data_path)
-        train_creditcard_3_layer_mlp(train_data, test_data, model_path, overwrite=True)
-    elif dataset == 'xray':
-        model_path = 'tf_codes/models/chest_xray_cnn'
-        data_path = "tf_codes/input/chest_xray"
-        train_data, test_data, val_data = load_data_pneumonia(data_path)
-        train_pneumonia_binary_classification_cnn(train_data, test_data, model_path, overwrite=True,
-                                                  epochs=20, data_augmentation=True)
+def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False, 
+                        optimizer_config = "RMSprop",
+                        loss_fn ="categorical_crossentropy",
+                        epochs=20):
+
+    (train_images, train_labels)=train_data
+    (test_images, test_labels)=test_data
+
+    train_images = resize_img(train_images)
+    test_images = resize_img(test_images)
+
+    # Transform all labels to one-hot encoding
+    train_labels = to_categorical(train_labels,num_classes=10)
+    test_labels = to_categorical(test_labels,num_classes=10)
+
+    # Let's start building a model
+    if not os.path.exists(path) or overwrite:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            print("TRAIN ANYWAY option enabled, create and train a new one ...")
+        else:
+            print(path, " - model not found, create and train a new one ...")
+        
+        # Include top = add fully connected layers to layer.
+        # Weights = use pretrained weights (trained in imagenet)
+        vgg = VGG19(include_top=False,weights="imagenet",input_shape=(48,48,3))
+
+        model = models.Sequential()
+        for layer in vgg.layers:
+            model.add(layer)
+        
+        # Ensure the vgg layers are not trainable
+        for layer in model.layers:
+            layer.trainable = False
+        
+        # Adding (trainable) fully connected layers
+        model.add(layers.Flatten())
+        model.add(layers.Dense(128))
+        model.add(layers.Dense(10,activation="softmax"))
+
+        print(model.summary())
+
+        # Total params: 20,091,338
+        # Trainable params: 66,954
+        # Non-trainable params: 20,024,384
+
+        model.compile(optimizer=optimizer_config, loss=loss_fn, metrics=["accuracy"])
+        hist = model.fit(train_images,train_labels,validation_split=0.15,epochs=epochs,batch_size=1000)
+
+
+        test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=2)
+        print("Final Accuracy achieved is:", test_accuracy, "and the loss is:", test_loss)
+
+        model.save(path)
+        print("Model has been saved")
     else:
-        print("Dataset not specified, please try again...")
-'''
+        print("Model found, there is no need to re-train the model ...")
+
+
+def resize_img(img):
+    num_imgs = img.shape[0]
+    new_array = np.zeros((num_imgs, 48,48,3))
+    for i in range(num_imgs):
+        new_array[i] = cv2.resize(img[i,:,:,:],(48,48))
+    return new_array

@@ -5,6 +5,7 @@ __credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
 __license__ = "MIT"
 
 
+import enum
 import tensorflow as tf
 import numpy as np
 import os, shutil
@@ -38,6 +39,12 @@ def load_param_and_config(model, debugging_output=False):
 def trim_weights(model, pruned_pairs):
     (w, g) = load_param_and_config(model)
     cut_list_entire_model = [] # Add a zero for the first layer (usually a Flatten layer)
+    
+    if pruned_pairs is None:
+        # We just need to create an all zero list for all layers
+        for layer in model.layers:
+            cut_list_entire_model.append(0)
+        return w, g, cut_list_entire_model
 
     for layer_idx, pairs_at_layer in enumerate(pruned_pairs):
         if len(pairs_at_layer) == 0:
@@ -87,7 +94,7 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
         print("The given path is not available, overwriting the old file ...")
 
     new_weights, config, cut_list = trim_weights(original_model, pruned_list)
-
+    
     pruned_model = tf.keras.models.Sequential()
 
     for layer_idx, layer_config in enumerate(config):

@@ -184,6 +184,9 @@ class Pruner:
         self.prune_fc(evaluator, save_file, pruned_model_path, verbose, model_name, include_cnn_per_step=self.stepwise_cnn_pruning)
 
     def prune_fc(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None, include_cnn_per_step=False):
+        no_fc_to_prune = False
+        progress_if_no_fc_to_prune = 0
+
         if evaluator is not None:
             self.robustness_evaluator = evaluator
             self.target_adv_epsilons = evaluator.epsilons
@@ -221,16 +224,33 @@ class Pruner:
         saliency_matrix=None
         
         model = self.model
+        try:
+            big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
+        except Exception as err:
+            no_fc_to_prune = True
+            print(f"Unexpected {err=}")
 
-        big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
-    
         # Start elapsed time counting
         start_time = time.time()
 
         while(not stop_condition):
             
             if include_cnn_per_step:
-                self.model = self.prune_cnv_step(evaluator, save_file=False, pruned_model_path=None, verbose=1)
+                self.model = self.prune_cnv_step(evaluator, save_file=save_file, pruned_model_path=None, verbose=1)
+            
+            if no_fc_to_prune:
+                
+                loss, accuracy = self.evaluate(verbose=1)
+                accuracy_board.append((round(loss, 4), round(accuracy, 4)))
+                tape_of_moves.append([])
+
+                progress_if_no_fc_to_prune += self.pruning_step
+                if self.pruning_target <= progress_if_no_fc_to_prune:
+                    stop_condition = True
+
+                # Skip the current round of fc pruning
+                continue
+
 
             pruned_pairs = None
             pruning_result_dict = self.sampler.nominate(model,big_map, 
@@ -341,11 +361,14 @@ class Pruner:
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
-        print(pruned_pairs_all_steps)
+        
         self.model = model
-        # final_model_path = self.model_path+"_pruned_surgery"
-        final_model_path =pruned_model_path
-        self.model = surgeon.create_pruned_model(model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
+        if pruned_pairs_all_steps is None:
+            self.save_model(pruned_model_path)
+        else: 
+            # final_model_path = self.model_path+"_pruned_surgery"
+            final_model_path =pruned_model_path
+            self.model = surgeon.create_pruned_model(model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
 
         print("FC pruning accomplished")
 

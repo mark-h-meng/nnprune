@@ -151,7 +151,8 @@ def get_definition_map(model, definition_dict=None, input_interval=(0, 1)):
         raise Exception("Fully connected layers not identified")
     if len(dense_layer_indexes) <= 1:
         raise Exception("Insufficient number of fully connected layers to assess saliency," +\
-            "you may apply other pruning mode and try again.")
+            "you may apply other pruning mode and try again. Please ignore this message if " +\
+                "the model is a convnet")
 
     # Now let's create a hash table as dictionary to store all definition intervals of FC neurons
     if definition_dict is None:

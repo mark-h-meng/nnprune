@@ -1,7 +1,7 @@
 
 from paoding.pruner import Pruner
 from paoding.sampler import Sampler
-import os, shutil
+import os, shutil, time
 
 from tensorflow.keras import datasets, layers, models
 from tensorflow.keras.models import Sequential, Model
@@ -250,7 +250,7 @@ encode_numeric_zscore(data, 'dst_host_srv_serror_rate')
 encode_numeric_zscore(data, 'dst_host_rerror_rate')
 encode_numeric_zscore(data, 'dst_host_srv_rerror_rate')
 
-LARGE_MODEL = False
+LARGE_MODEL = True
 model_name = "KDDCUP"
 
 # Drop the "num_outbound_cmds" column because all data has its value equal 0
@@ -273,33 +273,33 @@ train_features, val_features, train_labels, val_labels = train_test_split(x_trai
 if not LARGE_MODEL:
     train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                            epochs=30)
+                            epochs=10)
 else:
     model_path+="-xl"
     model_name+="-XL"
     train_kdd99_7_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                            epochs=30)
+                            epochs=10)
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
 target = 0.5
 step = 0.03125
-while target <= 0.5:
-    pruner = Pruner(model_path,
+
+pruner = Pruner(model_path,
             (x_test, y_test),
             target=target,
             step=step,
             sample_strategy=sampler,
-            model_type=ModelType.OTHER)
+            model_type=ModelType.OTHER,
+            stepwise_cnn_pruning=True)
             #seed_val=42)
 
-    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
+pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
-    pruner.evaluate(verbose=1)
+pruner.evaluate(verbose=1)
+model_path += "_pruned"
+pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
 
-    pruner.prune(evaluator=None, model_name=model_name+"_"+str(target))
-
-    pruner.evaluate(verbose=1)
-    target += step
-    pruner.gc()
+pruner.evaluate(verbose=1)
+pruner.gc()
