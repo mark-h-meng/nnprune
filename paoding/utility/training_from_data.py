@@ -193,6 +193,8 @@ def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         #plt.show()
 
@@ -206,6 +208,7 @@ def train_cifar_8_layer_cnn(train_data,
                             overwrite=False,
                             use_relu=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                            loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                             epochs=50):
 
     (train_images, train_labels)=train_data
@@ -236,7 +239,7 @@ def train_cifar_8_layer_cnn(train_data,
         model.add(layers.Dense(10, activation='softmax'))  # Result will be 10 outputs
 
         print(model.summary())
-        model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        model.compile(optimizer=optimizer_config, loss=loss_fn,
                       metrics=['accuracy'])
 
         training_history = model.fit(train_images, train_labels, epochs=epochs,
@@ -246,6 +249,8 @@ def train_cifar_8_layer_cnn(train_data,
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
@@ -259,6 +264,75 @@ def train_cifar_8_layer_cnn(train_data,
     else:
         print("Model found, there is no need to re-train the model ...")
 
+def train_cifar_cnn(train_data,
+                            test_data,
+                            path,
+                            overwrite=False,
+                            use_relu=False,
+                            optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                            loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                            epochs=20,
+                            topK=1):
+
+    (x, y)=train_data
+    (test_images, test_labels)=test_data
+
+    train_images, val_images , train_labels, val_labels = train_test_split(x, y, test_size=0.167, train_size=0.833)
+
+    # Let's start building a model
+    if not os.path.exists(path) or overwrite:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            print("TRAIN ANYWAY option enabled, create and train a new one ...")
+        else:
+            print(path, " - model not found, create and train a new one ...")
+        model = models.Sequential()
+        model.add(layers.Conv2D(filters=64, kernel_size = (3,3), activation="relu", input_shape=(32, 32, 3)))
+        model.add(layers.Conv2D(filters=64, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
+
+        model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
+        model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2))) 
+
+        model.add(layers.Conv2D(filters=256, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
+            
+        model.add(layers.Flatten())
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(10, activation='softmax'))
+
+        print(model.summary())
+        
+        if topK <= 1:
+            model.compile(optimizer=optimizer_config, loss=loss_fn,
+                      metrics=['accuracy'])
+            
+            training_history = model.fit(train_images, train_labels, epochs=epochs,
+                                        validation_data=(val_images, val_labels))
+
+            test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=2)
+            print("Final Accuracy achieved is: ", test_accuracy)
+
+        else:
+            model.compile(optimizer=optimizer_config, 
+                    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                    metrics=['accuracy', tf.keras.metrics.TopKCategoricalAccuracy(k=topK)])
+            
+            training_history = model.fit(train_images, train_labels, epochs=epochs,
+                                        validation_data=(val_images, val_labels))
+
+            test_loss, test_accuracy, test_topk_accuracy = model.evaluate(test_images, test_labels, verbose=2)
+            print("Final Accuracy achieved is: ", test_accuracy, " with top-K accuracy as", test_topk_accuracy)
+        model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+        print("Model has been saved")
+
+    else:
+        print("Model found, there is no need to re-train the model ...")
+
 
 def train_cifar_9_layer_cnn(train_data,
                             test_data,
@@ -266,6 +340,7 @@ def train_cifar_9_layer_cnn(train_data,
                             overwrite=False,
                             use_relu=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                            loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                             epochs=20,
                             topK=1):
 
@@ -303,7 +378,7 @@ def train_cifar_9_layer_cnn(train_data,
         print(model.summary())
         
         if topK <= 1:
-            model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+            model.compile(optimizer=optimizer_config, loss=loss_fn,
                       metrics=['accuracy'])
             
             training_history = model.fit(train_images, train_labels, epochs=epochs,
@@ -323,6 +398,8 @@ def train_cifar_9_layer_cnn(train_data,
             test_loss, test_accuracy, test_topk_accuracy = model.evaluate(test_images, test_labels, verbose=2)
             print("Final Accuracy achieved is: ", test_accuracy, " with top-K accuracy as", test_topk_accuracy)
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
 
     else:
@@ -368,6 +445,8 @@ def train_mnist_3_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
@@ -378,6 +457,59 @@ def train_mnist_3_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         plt.legend(loc='lower right')
         #plt.show()
         '''
+    else:
+        print("Model found, there is no need to re-train the model ...")
+
+
+def train_mnist_cnn(train_data, test_data, path, overwrite=False, use_relu=True,
+                            optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                            epochs=20):
+    # Ref: https://www.kaggle.com/code/elcaiseri/mnist-simple-cnn-keras-accuracy-0-99-top-1
+    # Annotations: Experiment No. 3
+    (x, y)=train_data
+    (test_images, test_labels)=test_data
+
+    #train_images, val_images , train_labels, val_labels = train_test_split(x, y, test_size=0.167, train_size=0.833)
+
+    # Let's start building a model
+    if not os.path.exists(path) or overwrite:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            print("TRAIN ANYWAY option enabled, create and train a new one ...")
+        else:
+            print("Model not found, create and train a new one ...")
+        model = models.Sequential()
+        model.add(layers.Conv2D(filters=64, kernel_size = (3,3), activation="relu", input_shape=(28,28,1)))
+        model.add(layers.Conv2D(filters=64, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
+
+        model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
+        model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2))) 
+
+        model.add(layers.Conv2D(filters=256, kernel_size = (3,3), activation="relu"))
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
+            
+        model.add(layers.Flatten())
+        model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dense(128, activation='relu'))
+        model.add(layers.Dense(10, activation='softmax'))
+
+        print(model.summary())
+        model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+                      metrics=['accuracy'])
+
+        training_history = model.fit(test_images, test_labels, epochs=epochs,
+                                     validation_data=(test_images, test_labels))
+
+        test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=2)
+        print("Final Accuracy achieved is: ", test_accuracy)
+
+        model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
+        print("Model has been saved")
+
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -425,6 +557,8 @@ def train_mnist_5_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
@@ -528,6 +662,8 @@ def train_pneumonia_binary_classification_cnn(train_data,
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
@@ -549,6 +685,7 @@ def train_cifar_100_9_layer_cnn(train_data,
                             overwrite=False,
                             use_relu=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                            loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
                             epochs=30):
 
     (train_images, train_labels)=train_data
@@ -585,7 +722,7 @@ def train_cifar_100_9_layer_cnn(train_data,
         print(model.summary())
         
         model.compile(optimizer=optimizer_config, 
-                    loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
+                    loss=loss_fn,
                     metrics=['sparse_top_k_categorical_accuracy'])
         
                       
@@ -619,6 +756,8 @@ def train_cifar_100_9_layer_cnn(train_data,
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         
     else:
@@ -659,6 +798,8 @@ def train_cifar_6_layer_mlp(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is: ", test_accuracy)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         '''
         plt.plot(training_history.history['accuracy'], label="Accuracy")
@@ -710,6 +851,7 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
         
         # Adding (trainable) fully connected layers
         model.add(layers.Flatten())
+        model.add(layers.Dense(256))
         model.add(layers.Dense(128))
         model.add(layers.Dense(10,activation="softmax"))
 
@@ -727,6 +869,8 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is:", test_accuracy, "and the loss is:", test_loss)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
     else:
         print("Model found, there is no need to re-train the model ...")

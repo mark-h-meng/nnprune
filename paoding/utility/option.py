@@ -9,6 +9,8 @@ from enum import Enum
 
 class ModelType(Enum):
     XRAY = 1
+    KDD = 10
+    MRI = 11
     CREDIT = 2
     MNIST = 3
     CIFAR = 4

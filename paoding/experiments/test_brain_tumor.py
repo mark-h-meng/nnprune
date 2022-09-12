@@ -78,11 +78,14 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         #plt.show()
 
     else:
         print("Model found, there is no need to re-train the model ...")
+
 
 
 # Hide GPU from visible devices
@@ -136,25 +139,29 @@ train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
                     optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
                     epochs=20)
 
+
 model_name = "MRI"
 
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
+model_path += "_pruned"
 pruner = Pruner(model_path,
         test_generator,
         target=0.5,
         step=0.05,
         sample_strategy=sampler,
-        model_type=ModelType.CIFAR,
+        model_type=ModelType.MRI,
         stepwise_cnn_pruning=True)
 
 pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
                     loss = 'sparse_categorical_crossentropy')
 
 pruner.evaluate(verbose=1)
-model_path += "_pruned"
+
 pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
 
 pruner.evaluate(verbose=1)
+
+pruner.quantization()
 pruner.gc()

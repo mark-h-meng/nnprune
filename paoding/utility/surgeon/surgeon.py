@@ -332,6 +332,7 @@ class Surgeon:
         else:
             temp_layer, new_mask = self._apply_delete_mask(node, input_masks)
             # This call is needed to initialise input_shape and output_shape
+            print(">>>>>>>>> DELETING ", inputs)
             temp_layer(utils.single_element(inputs))
             new_layer = self._delete_channel_weights(temp_layer, channels)
             if layer_name:

@@ -83,6 +83,8 @@ def train_kdd99_5_layer_mlp(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         #plt.show()
 
@@ -145,6 +147,8 @@ def train_kdd99_7_layer_mlp(train_data, test_data, path, overwrite=False,
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
+        dot_img_file = path + '.png'
+        tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
         #plt.show()
 
@@ -291,7 +295,7 @@ pruner = Pruner(model_path,
             target=target,
             step=step,
             sample_strategy=sampler,
-            model_type=ModelType.OTHER,
+            model_type=ModelType.KDD,
             stepwise_cnn_pruning=True)
             #seed_val=42)
 
@@ -302,4 +306,5 @@ model_path += "_pruned"
 pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
 
 pruner.evaluate(verbose=1)
+pruner.quantization()
 pruner.gc()

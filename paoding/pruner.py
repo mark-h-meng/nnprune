@@ -72,7 +72,7 @@ class Pruner:
 
         self.model_type = model_type
 
-        self.target_adv_epsilons = [0.5]
+        self.target_adv_epsilons = [0.01, 0.05, 0.1]
 
         self.pruning_target = target
         self.pruning_step = step
@@ -158,15 +158,17 @@ class Pruner:
     def quantization(self):
         converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
         tflite_model = converter.convert()
-        tflite_models_dir = Path('paoding/models/temp_tflite_models/')
+        tflite_models_dir = Path('paoding/models/tflite_models/')
         tflite_models_dir.mkdir(exist_ok=True, parents=True)
-        tflite_model_file = tflite_models_dir/"model.tflite"  
+        model_filename = self.model_type.name + ".tflite" 
+        tflite_model_file = tflite_models_dir/model_filename  
         tflite_model_file.write_bytes(tflite_model)
         print(" >> Size after pruning:", os.path.getsize(tflite_model_file))
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.target_spec.supported_types = [tf.float16]
         tflite_fp16_model = converter.convert()
-        tflite_model_fp16_file = tflite_models_dir/"model_quant_f16.tflite"
+        model_filename_f16 = self.model_type.name + "_quant_f16.tflite"
+        tflite_model_fp16_file = tflite_models_dir/model_filename_f16
         tflite_model_fp16_file.write_bytes(tflite_fp16_model)
         print(" >> Size after quantization:", os.path.getsize(tflite_model_fp16_file))
 
@@ -223,21 +225,31 @@ class Pruner:
         cumulative_impact_intervals = None
         saliency_matrix=None
         
-        model = self.model
-        try:
-            big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
-        except Exception as err:
-            no_fc_to_prune = True
-            print(f"Unexpected {err=}")
+        map_defined = False
 
+        model = self.model
+        
         # Start elapsed time counting
         start_time = time.time()
 
         while(not stop_condition):
             
             if include_cnn_per_step:
-                self.model = self.prune_cnv_step(evaluator, save_file=save_file, pruned_model_path=None, verbose=1)
-            
+                pruned_model_path_conv = self.model_path + "conv_pruned"
+                self.model = self.prune_cnv_step(None, save_file=True, pruned_model_path=pruned_model_path_conv, verbose=1)
+                self.model = tf.keras.models.load_model(pruned_model_path_conv)
+                self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
+                print(self.model.summary())
+                model = self.model
+
+            try:
+                if not map_defined:
+                    big_map = simprop.get_definition_map(model, input_interval=(self.lo_bound, self.hi_bound))
+                    map_defined = True
+            except Exception as err:
+                no_fc_to_prune = True
+                print(f"Unexpected {err=}")
+
             if no_fc_to_prune:
                 
                 loss, accuracy = self.evaluate(verbose=1)
@@ -349,14 +361,18 @@ class Pruner:
             csv_line.append('moves,loss,accuracy')
             csv_writer.writerow(csv_line)
 
+            
             for index, item in enumerate(accuracy_board):
+                rob_pres_stat = []
                 if evaluator is not None:
-                    rob_pres_stat = [item[k] for k in self.target_adv_epsilons]
-                else:
-                    rob_pres_stat = []
+                    rob_res = score_board[index]
+                    for k in self.target_adv_epsilons:
+                        rob_pres_stat.append(rob_res[k])
+                
                 rob_pres_stat.append(tape_of_moves[index])
                 rob_pres_stat.append(accuracy_board[index])
                 csv_writer.writerow(rob_pres_stat)
+                
             
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
@@ -427,7 +443,7 @@ class Pruner:
         # utils.create_dir_if_not_exist("paoding/save_figs/")
         
         if save_file and pruned_model_path is None:
-            pruned_model_path=self.model_path
+            pruned_model_path=self.model_path+"_conv_pruned"
 
         # Start elapsed time counting
         start_time = time.time()
@@ -460,7 +476,6 @@ class Pruner:
         end_time = time.time()
         print("Elapsed time: ", round((end_time - start_time)/60.0, 3), "minutes /", int(end_time - start_time), "seconds")
 
-        print("Pruning accomplished")
         return self.model
     
     
