@@ -274,37 +274,42 @@ x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=42)
 
 train_features, val_features, train_labels, val_labels = train_test_split(x_train, y_train,
                                                                               test_size=0.2, train_size=0.8)
-if not LARGE_MODEL:
-    train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
-                            optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                            epochs=10)
-else:
-    model_path+="-xl"
-    model_name+="-XL"
-    train_kdd99_7_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
-                            optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                            epochs=10)
-sampler = Sampler()
-sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-target = 0.5
-step = 0.03125
+  
+round = 0
+while(round<1):
 
-pruner = Pruner(model_path,
-            (x_test, y_test),
-            target=target,
-            step=step,
-            sample_strategy=sampler,
-            model_type=ModelType.KDD,
-            stepwise_cnn_pruning=True)
-            #seed_val=42)
+    if not LARGE_MODEL:
+        train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
+                                optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                                epochs=10)
+    else:
+        train_kdd99_7_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
+                                optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                                epochs=10)
 
-pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
+    sampler = Sampler()
+    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25), recursive_pruning=True)
 
-pruner.evaluate(verbose=1)
-model_path += "_pruned"
-pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
+    target = 0.25
+    step = 0.03125
 
-pruner.evaluate(verbose=1)
-pruner.quantization()
-pruner.gc()
+    pruner = Pruner(model_path,
+                (x_test, y_test),
+                target=target,
+                step=step,
+                sample_strategy=sampler,
+                model_type=ModelType.KDD,
+                stepwise_cnn_pruning=True, seed_val=42)
+
+    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
+
+    pruner.evaluate(verbose=1)
+
+    pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
+
+    pruner.evaluate(verbose=1)
+    pruner.quantization()
+    pruner.gc()
+
+    round += 1

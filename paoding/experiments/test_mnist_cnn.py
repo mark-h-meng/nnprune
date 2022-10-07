@@ -46,37 +46,41 @@ test_features = test_features.reshape(test_features.shape[0], 28, 28, 1) / 255.0
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 loss_fn=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
 
-training_from_data.train_mnist_cnn((train_features, train_labels),
-                                           (test_features, test_labels),
-                                           model_path,
-                                           overwrite=False,
-                                           use_relu=True,
-                                           optimizer_config=optimizer,
-                                           epochs=30)
+round = 0
+while(round<1):
 
-sampler = Sampler()
-sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+    training_from_data.train_mnist_cnn((train_features, train_labels),
+                                            (test_features, test_labels),
+                                            model_path,
+                                            overwrite=False,
+                                            use_relu=True,
+                                            optimizer_config=optimizer,
+                                            epochs=30)
 
-model_name = 'MNIST'
-target = 0.5
-step = 0.05
+    sampler = Sampler()
+    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)
-pruner = Pruner(model_path,
-            (test_features, test_labels),
-            target=target,
-            step=step,
-            sample_strategy=sampler,
-            model_type=ModelType.MNIST,
-            stepwise_cnn_pruning=True,
-            seed_val=42)
+    model_name = 'MNIST'
+    target = 0.25
+    step = 0.05
 
-pruner.load_model(optimizer=optimizer, loss=loss_fn)
+    evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)
+    pruner = Pruner(model_path,
+                (test_features, test_labels),
+                target=target,
+                step=step,
+                sample_strategy=sampler,
+                model_type=ModelType.MNIST,
+                stepwise_cnn_pruning=True,
+                seed_val=42)
 
-pruner.evaluate(verbose=1)
-pruned_model_path = model_path + "_pruned"
-pruner.prune(evaluator=evaluator, pruned_model_path=pruned_model_path, model_name=model_name, save_file=True)
+    pruner.load_model(optimizer=optimizer, loss=loss_fn)
 
-pruner.evaluate(verbose=1)
-pruner.quantization()
-pruner.gc()
+    pruner.evaluate(verbose=1)
+    pruned_model_path = model_path + "_pruned"
+    pruner.prune(evaluator=evaluator, pruned_model_path=pruned_model_path, model_name=model_name, save_file=True)
+
+    pruner.evaluate(verbose=1)
+    pruner.quantization()
+    pruner.gc()
+    round += 1

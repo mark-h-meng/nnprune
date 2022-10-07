@@ -279,6 +279,7 @@ class Pruner:
             saliency_matrix = pruning_result_dict['saliency_matrix']
             score_dicts = pruning_result_dict['pruning_pairs_dict_overall_scores']
 
+            self.model = model
             epoch_couter += 1
 
             # Check if the list of pruned pair is empty or not - empty means no more pruning is feasible
@@ -307,10 +308,10 @@ class Pruner:
                 print(" >> Pruned", num_pruned_curr_batch, "hidden units in this epoch")
                 print(" >> Pruning progress:", bcolors.BOLD, str(round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
-                model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
+                self.model.compile(optimizer=self.optimizer, loss=self.loss, metrics=['accuracy'])
                 
                 if evaluator is not None and self.test_set is not None:                    
-                    robust_preservation = self.robustness_evaluator.evaluate_robustness(model, self.test_set, self.model_type)
+                    robust_preservation = self.robustness_evaluator.evaluate_robustness(self.model, self.test_set, self.model_type)
 
                     # Update score_board and tape_of_moves
                     score_board.append(robust_preservation)
@@ -377,14 +378,12 @@ class Pruner:
             if evaluator is None:
                 csv_writer.writerow(["Elapsed time: ", round((end_time - start_time) / 60.0, 3), "minutes /", int(end_time - start_time), "seconds"])
 
-        
-        self.model = model
         if pruned_pairs_all_steps is None:
             self.save_model(pruned_model_path)
         else: 
             # final_model_path = self.model_path+"_pruned_surgery"
             final_model_path =pruned_model_path
-            self.model = surgeon.create_pruned_model(model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
+            self.model = surgeon.create_pruned_model(self.model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
 
         print("FC pruning accomplished")
 

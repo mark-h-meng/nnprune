@@ -17,8 +17,9 @@ class Sampler:
     mode = -1
     mode_conv = -1
     params=(0, 0)
+    recursive_pruning = False
 
-    def __init__(self, mode=SamplingMode.BASELINE):
+    def __init__(self, mode=SamplingMode.BASELINE, recursive_pruning=False):
         """Initializes `Sampler` class.
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
@@ -26,9 +27,10 @@ class Sampler:
         """
         self.mode = mode
         self.mode_conv = SamplingMode.SCALE
+        self.recursive_pruning = recursive_pruning
     
 
-    def set_strategy(self, mode, params=(0.75, 0.25)):
+    def set_strategy(self, mode, params=(0.75, 0.25), recursive_pruning=False):
         """Set the sampling strategy.
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
@@ -38,11 +40,12 @@ class Sampler:
         self.mode = mode
         self.mode_conv = SamplingMode.SCALE
         self.params = params
+        self.recursive_pruning = recursive_pruning
 
 
     def nominate(self, model, big_map, prune_percentage=0.5,
                      neurons_manipulated=None, saliency_matrix=None,
-                     recursive_pruning=False, cumulative_impact_intervals=None,
+                     cumulative_impact_intervals=None,
                      bias_aware=False, pooling_multiplier=2,
                      target_scores=None, verbose=0):
         """
@@ -68,7 +71,7 @@ class Sampler:
         pruning_pairs_dict_overall_scores = None
         if self.mode == SamplingMode.BASELINE:
             result = pruning.pruning_baseline(model, big_map, prune_percentage, neurons_manipulated,
-                                        saliency_matrix, recursive_pruning, bias_aware)
+                                        saliency_matrix, self.recursive_pruning, bias_aware)
             (model, neurons_manipulated, pruned_pairs, saliency_matrix) = result
 
             count_pairs_pruned_curr_epoch = 0
@@ -85,7 +88,7 @@ class Sampler:
                    pooling_multiplier,
                    neurons_manipulated,
                    self.params,
-                   recursive_pruning,
+                   self.recursive_pruning,
                    bias_aware,
                    kaggle_credit=False)
             (model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
@@ -108,7 +111,7 @@ class Sampler:
                       neurons_manipulated,
                       target_scores,
                       self.params,
-                      recursive_pruning,
+                      self.recursive_pruning,
                       bias_aware,
                       kaggle_credit=False)
             (model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result

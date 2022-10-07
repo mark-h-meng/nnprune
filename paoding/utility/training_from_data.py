@@ -499,7 +499,7 @@ def train_mnist_cnn(train_data, test_data, path, overwrite=False, use_relu=True,
         model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                       metrics=['accuracy'])
 
-        training_history = model.fit(test_images, test_labels, epochs=epochs,
+        training_history = model.fit(x, y, epochs=epochs,
                                      validation_data=(test_images, test_labels))
 
         test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=2)

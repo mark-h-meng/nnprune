@@ -72,9 +72,9 @@ def trim_weights(model, pruned_pairs):
                         list_new_w_layer_idx_0.append(np.delete(prev_layer_unit, node, 0))
                 except:
                     print("Something went wrong while cutting FC units at layer", layer_idx) 
-                assert len(w[layer_idx][0]) == len(list_new_w_layer_idx_0), \
-                    "The length of original param at layer " + str(layer_idx) + " should be equal to the newly appened one" \
-                        + str(len(w[layer_idx][0])) + " vs " + str(len(list_new_w_layer_idx_0))
+                #assert len(w[layer_idx][0]) == len(list_new_w_layer_idx_0), \
+                #    "The length of original param at layer " + str(layer_idx) + " should be equal to the newly appened one: " \
+                #        + str(len(w[layer_idx][0])) + " vs " + str(len(list_new_w_layer_idx_0))
 
                 w[layer_idx][0] = np.array(list_new_w_layer_idx_0)
                 ## Cut the bias in the current layer

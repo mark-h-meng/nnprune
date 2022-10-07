@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 
 def train_brain_cnn(train_data, test_data, path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
-                            epochs=20):
+                            epochs=40):
     
     # Let's start building a model
     if not os.path.exists(path) or overwrite:
@@ -56,7 +56,7 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
             
             layers.Flatten(),
             layers.Dense(512,activation='relu'),
-            layers.Dense(512,activation='relu'),            
+            layers.Dense(128,activation='relu'),            
             layers.Dense(4,activation='softmax')
         ])
         print(model.summary())
@@ -135,33 +135,36 @@ test_generator=train_datagen.flow_from_directory(
     target_size=(img_size,img_size)
 )
 
-train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
-                    optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
-                    epochs=20)
+round = 0
+while(round<1):
+
+    train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
+                        optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
+                        epochs=20)
 
 
-model_name = "MRI"
+    model_name = "MRI"
 
-sampler = Sampler()
-sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+    sampler = Sampler()
+    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-model_path += "_pruned"
-pruner = Pruner(model_path,
-        test_generator,
-        target=0.5,
-        step=0.05,
-        sample_strategy=sampler,
-        model_type=ModelType.MRI,
-        stepwise_cnn_pruning=True)
+    pruner = Pruner(model_path,
+            test_generator,
+            target=0.23,
+            step=0.05,
+            sample_strategy=sampler,
+            model_type=ModelType.MRI,
+            stepwise_cnn_pruning=True)
 
-pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
-                    loss = 'sparse_categorical_crossentropy')
+    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
+                        loss = 'sparse_categorical_crossentropy')
 
-pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
 
-pruner.prune(evaluator=None, pruned_model_path=model_path, model_name=model_name, save_file=True)
+    pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
 
-pruner.quantization()
-pruner.gc()
+    pruner.quantization()
+    pruner.gc()
+    round += 1
