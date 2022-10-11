@@ -36,14 +36,14 @@ class Pruner:
     pruning_target = None
     pruning_step = None
     
-    model_type = -1
+    surgery_mode = False
 
     lo_bound = 0
     hi_bound = 1
 
     stepwise_cnn_pruning = False
     
-    def __init__(self, path, test_set=None, target=0.5, step=0.025, sample_strategy=None, input_interval=(0,1), model_type=ModelType.XRAY, seed_val=None, stepwise_cnn_pruning=False):
+    def __init__(self, path, test_set=None, target=0.5, step=0.025, sample_strategy=None, input_interval=(0,1), model_type=ModelType.XRAY, seed_val=None, stepwise_cnn_pruning=False, surgery_mode=False):
         """
         Initializes `Pruner` class.
         Args:     
@@ -89,6 +89,8 @@ class Pruner:
         #self.first_mlp_layer_size = first_mlp_layer_size
 
         self.stepwise_cnn_pruning = stepwise_cnn_pruning
+
+        self.surgery_mode = surgery_mode
 
     def load_model(self, optimizer=None, loss=None):
         """
@@ -380,11 +382,12 @@ class Pruner:
 
         if pruned_pairs_all_steps is None:
             self.save_model(pruned_model_path)
-        else: 
+        elif self.surgery_mode is True: 
             # final_model_path = self.model_path+"_pruned_surgery"
             final_model_path =pruned_model_path
             self.model = surgeon.create_pruned_model(self.model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
-
+        else:
+            print(self.model.summary())
         print("FC pruning accomplished")
 
     def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):
