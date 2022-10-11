@@ -291,7 +291,7 @@ while(round<1):
     sampler = Sampler()
     sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25), recursive_pruning=True)
 
-    target = 0.25
+    target = 0.03125
     step = 0.03125
 
     pruner = Pruner(model_path,
@@ -300,7 +300,9 @@ while(round<1):
                 step=step,
                 sample_strategy=sampler,
                 model_type=ModelType.KDD,
-                stepwise_cnn_pruning=True, seed_val=42)
+                stepwise_cnn_pruning=True, 
+                seed_val=42,
+                surgery_mode=True)
 
     pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
@@ -309,7 +311,7 @@ while(round<1):
     pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
     pruner.evaluate(verbose=1)
-    pruner.quantization()
+    # pruner.quantization()
     pruner.gc()
 
     round += 1

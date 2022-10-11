@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '0.1.0' 
+VERSION = '1.0.0' 
 DESCRIPTION = 'Stochastic data-free robustness preserving neural network pruning'
 
 with open("README.md", "r", encoding="utf-8") as fh:
@@ -34,7 +34,7 @@ setup(
         
         keywords=['python', 'neural network pruning'],
         classifiers= [
-            'Development Status :: 2 - Pre-Alpha',
+            'Development Status :: 4 - Beta',
             'Intended Audience :: Education',
             'Intended Audience :: Science/Research',
             'Programming Language :: Python :: 3',

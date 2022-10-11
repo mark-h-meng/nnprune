@@ -875,6 +875,77 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
     else:
         print("Model found, there is no need to re-train the model ...")
 
+'''
+Since input image size is (32 x 32), first upsample the image by factor of (7x7) to transform it to (224 x 224)
+Connect the feature extraction and "classifier" layers to build the model.
+'''
+def transfer_resnet_50(train_data, test_data, path, overwrite=False, 
+                        optimizer_config = "SGD",
+                        loss_fn ="sparse_categorical_crossentropy",
+                        epochs=3):
+
+    (train_images, train_labels)=train_data
+    (test_images, test_labels)=test_data
+
+    # Let's start building a model
+    if not os.path.exists(path) or overwrite:
+        if os.path.exists(path):
+            shutil.rmtree(path)
+            print("TRAIN ANYWAY option enabled, create and train a new one ...")
+        else:
+            print(path, " - model not found, create and train a new one ...")
+        
+        inputs = tf.keras.layers.Input(shape=(32,32,3))
+    
+        resize = tf.keras.layers.UpSampling2D(size=(7,7))(inputs)
+
+        resnet_feature_extractor = transfer_resnet_feature_extractor(resize)
+        classification_output = transfer_resnet_entail_classifier(resnet_feature_extractor)
+        model = tf.keras.Model(inputs=inputs, outputs = classification_output)
+        print(model.summary())
+
+        # Total params: 26,215,818
+        # Trainable params: 26,162,698
+        # Non-trainable params: 53,120
+        
+        model.compile(optimizer=optimizer_config, 
+                        loss=loss_fn,
+                        metrics = ['accuracy'])
+
+        hist = model.fit(train_images, train_labels, epochs=epochs, 
+                            validation_data = (test_images, test_labels), batch_size=64)
+        test_loss, test_accuracy = model.evaluate(test_images, test_labels, batch_size=64)
+        print("Final Accuracy achieved is:", test_accuracy, "and the loss is:", test_loss)
+
+        model.save(path)
+        print("Model has been saved")
+    else:
+        print("Model found, there is no need to re-train the model ...")
+  
+
+'''
+Feature Extraction is performed by ResNet50 pretrained on imagenet weights. 
+Input size is 224 x 224.
+'''
+def transfer_resnet_feature_extractor(inputs):
+
+  feature_extractor = tf.keras.applications.resnet.ResNet50(input_shape=(224, 224, 3),
+                                               include_top=False,
+                                               weights='imagenet')(inputs)
+  return feature_extractor
+
+
+'''
+Defines final dense layers and subsequent softmax layer for classification.
+'''
+def transfer_resnet_entail_classifier(inputs):
+    x = tf.keras.layers.GlobalAveragePooling2D()(inputs)
+    x = tf.keras.layers.Flatten()(x)
+    x = tf.keras.layers.Dense(1024, activation="relu")(x)
+    x = tf.keras.layers.Dense(512, activation="relu")(x)
+    x = tf.keras.layers.Dense(10, activation="softmax", name="classification")(x)
+    return x
+
 
 def resize_img(img):
     num_imgs = img.shape[0]
@@ -882,3 +953,8 @@ def resize_img(img):
     for i in range(num_imgs):
         new_array[i] = cv2.resize(img[i,:,:,:],(48,48))
     return new_array
+
+def preprocess_image_input_resnet(input_images):
+  input_images = input_images.astype('float32')
+  output_ims = tf.keras.applications.resnet50.preprocess_input(input_images)
+  return output_ims

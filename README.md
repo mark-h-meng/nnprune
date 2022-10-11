@@ -38,3 +38,9 @@ You may run the test cases given in the package to quicky go through the pruning
 
 
 ![model evaluation](https://raw.githubusercontent.com/mark-h-meng/nnprune/main/README/pruning-robustness-assessment.gif)
+
+## Acknowledgment
+
+The implementation of convolutional layer pruning is inspired by Keras-surgeon under MIT License (https://github.com/BenWhetton/keras-surgeon).
+
+The author would also thank GitHub and PyPI for the free hosting service provided.
