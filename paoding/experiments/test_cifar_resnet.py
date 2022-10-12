@@ -37,18 +37,18 @@ training_from_data.transfer_resnet_50((train_X, train_labels),
                                         epochs=3)
 
 # We need to encode labels into one-hot format
-train_labels = tf.keras.utils.to_categorical(train_labels,num_classes=10)
-test_labels = tf.keras.utils.to_categorical(test_labels,num_classes=10)
+#train_labels = tf.keras.utils.to_categorical(train_labels,num_classes=10)
+#test_labels = tf.keras.utils.to_categorical(test_labels,num_classes=10)
 
 sampler = Sampler()
 sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-model_name = 'VGG19'
+model_name = 'RESNET'
 target = 0.05
 step = 0.025
 
 pruner = Pruner(model_path,
-            (test_features, test_labels),
+            (test_X, test_labels),
             target=target,
             step=step,
             sample_strategy=sampler,
@@ -59,9 +59,9 @@ pruner = Pruner(model_path,
 
 pruner.load_model(optimizer=optimizer_config, loss=loss_fn)
 
-pruner.evaluate(verbose=1)
+pruner.evaluate(verbose=1, batch_size=64)
 pruned_model_path = model_path + "_pruned"
 pruner.prune(evaluator=None, pruned_model_path=pruned_model_path, model_name=model_name, save_file=True)
 
-pruner.evaluate(verbose=1)
+pruner.evaluate(verbose=1, batch_size=64)
 pruner.gc()

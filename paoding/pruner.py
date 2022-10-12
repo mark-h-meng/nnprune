@@ -126,7 +126,7 @@ class Pruner:
         print(" >>> Pruned model saved")
        
     
-    def evaluate(self, verbose=0):
+    def evaluate(self, verbose=0, batch_size=None):
         """
         Evaluate the model performance.
         Args: 
@@ -143,18 +143,18 @@ class Pruner:
         if type(self.test_set) is tuple:
             t_features, t_labels = self.test_set
             startTime = datetime.now()
-            loss, accuracy = self.model.evaluate(t_features, t_labels, verbose=2)
+            loss, accuracy = self.model.evaluate(t_features, t_labels, verbose=2, batch_size=batch_size)
             elapsed = datetime.now() - startTime
         else:
             startTime = datetime.now()
-            loss, accuracy = self.model.evaluate(self.test_set, verbose=2)
+            loss, accuracy = self.model.evaluate(self.test_set, verbose=2, batch_size=batch_size)
             elapsed = datetime.now() - startTime
         if verbose > 0:
             print("Evaluation accomplished -- [ACC]", accuracy, "[LOSS]", loss, "[Elapsed Time]", elapsed)   
         return loss, accuracy
 
     def profile(self):
-        print(profiler.model_profiler(self.model, Batch_size=1))
+        print(profiler.model_profiler(self.model, batch_size=1))
 
 
     def quantization(self):
