@@ -183,7 +183,7 @@ class Pruner:
         """
 
         if not self.stepwise_cnn_pruning:
-            " >> Stepwise CNN pruning enabled: CNN pruning will be done together with FC pruning per step"
+            print(" >> Stepwise CNN pruning enabled: CNN pruning will be done together with FC pruning per step")
             self.prune_cnv(evaluator, save_file, pruned_model_path, verbose)
         self.prune_fc(evaluator, save_file, pruned_model_path, verbose, model_name, include_cnn_per_step=self.stepwise_cnn_pruning)
 
