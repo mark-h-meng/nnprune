@@ -250,7 +250,7 @@ class Pruner:
                     map_defined = True
             except Exception as err:
                 no_fc_to_prune = True
-                print(f"Unexpected {err=}")
+                print("Unexpected "+str(err))
 
             if no_fc_to_prune:
                 
