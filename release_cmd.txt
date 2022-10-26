@@ -5,4 +5,4 @@ python setup.py sdist build
 python setup.py bdist_wheel --universal
 
 * Upload to PyPI * 
-twine upload dist/* --skip-existing
+twine upload dist/* --skip-existing --verbose

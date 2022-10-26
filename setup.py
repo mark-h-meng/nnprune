@@ -1,6 +1,6 @@
 from setuptools import setup, find_packages
 
-VERSION = '1.0.0' 
+VERSION = '1.0.0.post2' 
 DESCRIPTION = 'Stochastic data-free robustness preserving neural network pruning'
 
 with open("README.md", "r", encoding="utf-8") as fh:

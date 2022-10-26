@@ -7,7 +7,7 @@ __license__ = "MIT"
 # Import publicly published & installed packages
 import tensorflow as tf
 from numpy.random import seed
-import os, time, csv, shutil, math, time
+import os, time, csv, shutil, sys, time
 from pathlib import Path
 from datetime import datetime
 import numpy as np
@@ -91,6 +91,8 @@ class Pruner:
         self.stepwise_cnn_pruning = stepwise_cnn_pruning
 
         self.surgery_mode = surgery_mode
+
+        self.print_welcome_header()
 
     def load_model(self, optimizer=None, loss=None):
         """
@@ -491,3 +493,23 @@ class Pruner:
         self.model_type=ModelType.XRAY 
         self.seed_val=None
  
+
+    def print_welcome_header(self):
+        #print("*** Welcome to Paoding-DL, A data-free NN pruning toolkit *** ")
+        #print("======== M. H. Meng, G. Bai, S. G. Teo and J. S. Dong ======= ")
+        msg = f'|=======================================================================================================|\n' +\
+            '| ________             _____________                 |                                                  |\n' +\
+            '| ___  __ \_____ ____________  /__(_)_____________ _ |       +-+ +-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+      |\n' +\
+            '| __  /_/ /  __ `/  __ \  __  /__  /__  __ \_  __ `/ |      |A| |D|a|t|a|-|f|r|e|e| |N|e|u|r|a|l|       |\n' +\
+            '| _  ____// /_/ // /_/ / /_/ / _  / _  / / /  /_/ /  | +-+-+-+-+-+-+-+++-+-+-+-+-+-+-+++-+-+-+-+-+-+-+  |\n' +\
+            '| /_/     \__,_/ \____/\__,_/  /_/  /_/ /_/_\__, /   | |N|e|t|w|o|r|k| |P|r|u|n|i|n|g| |T|o|o|l|k|i|t|  |\n' +\
+            '|                                         /____/     | +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+  |\n' +\
+            '|                                                    |                                                  |\n' +\
+            '|=======================================================================================================|\n' +\
+            '|              Paoding-DL is a research deliverable of a collaboration of scientists from:              |\n' +\
+            '|                                 National University of Singapore (Singapore)                          |\n' +\
+            '|                              Intitute for Infocomm Research, A*STAR (Singapore)                       |\n' +\
+            '|                                   The University of Queensland (Australia)                            |\n' +\
+            '|                                              Copyright@2022                                           |\n' +\
+            '|+======================================================================================================|'
+        print(msg)
