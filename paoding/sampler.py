@@ -4,19 +4,15 @@ __copyright__ = "Copyright 2021, National University of S'pore and A*STAR"
 __credits__ = ["G. Bai", "H. Guo", "S. G. Teo", "J. S. Dong"]
 __license__ = "MIT"
 
-# Import publicly published & installed packages
-import tensorflow as tf
-import time
-
 # Import in-house classes
 from paoding.utility.option import SamplingMode
 import paoding.utility.pruning as pruning
 
-class Sampler:
 
+class Sampler:
     mode = -1
     mode_conv = -1
-    params=(0, 0)
+    params = (0, 0)
     recursive_pruning = False
 
     def __init__(self, mode=SamplingMode.BASELINE, recursive_pruning=False):
@@ -28,7 +24,6 @@ class Sampler:
         self.mode = mode
         self.mode_conv = SamplingMode.SCALE
         self.recursive_pruning = recursive_pruning
-    
 
     def set_strategy(self, mode, params=(0.75, 0.25), recursive_pruning=False):
         """Set the sampling strategy.
@@ -42,12 +37,11 @@ class Sampler:
         self.params = params
         self.recursive_pruning = recursive_pruning
 
-
     def nominate(self, model, big_map, prune_percentage=0.5,
-                     neurons_manipulated=None, saliency_matrix=None,
-                     cumulative_impact_intervals=None,
-                     bias_aware=False, pooling_multiplier=2,
-                     target_scores=None, verbose=0):
+                 neurons_manipulated=None, saliency_matrix=None,
+                 cumulative_impact_intervals=None,
+                 bias_aware=False, pooling_multiplier=2,
+                 target_scores=None, verbose=0):
         """
         Nominate and prune the hidden units.
         Args:
@@ -62,16 +56,16 @@ class Sampler:
         pooling_multiplier: The sampling multiplier at each pruning epoch, only applicable for stochastic mode (optional, 2 by default).
         target_scores: The impact tolerance observed from the previous pruning operation, only applicable for stochastic mode (optional, None by default).
         Returns:
-        A dictionary data structure including the pruned model, the list of neurons that have been manipulated (neurons_manipulated), 
-            target score observed from the current pruning operation (target_scores), the list of pairs have been nominated in the 
-            current pruning epoch (pruned_pairs), saliency matrix (saliency_matrix), cumulative impact intervals (cumulative_impact_intervals), 
+        A dictionary data structure including the pruned model, the list of neurons that have been manipulated (neurons_manipulated),
+            target score observed from the current pruning operation (target_scores), the list of pairs have been nominated in the
+            current pruning epoch (pruned_pairs), saliency matrix (saliency_matrix), cumulative impact intervals (cumulative_impact_intervals),
             and the latest assessment of every hidden unit pairs for further pruning (pruning_pairs_dict_overall_scores).
         """
         pruned_pairs = None
         pruning_pairs_dict_overall_scores = None
         if self.mode == SamplingMode.BASELINE:
             result = pruning.pruning_baseline(model, big_map, prune_percentage, neurons_manipulated,
-                                        saliency_matrix, self.recursive_pruning, bias_aware)
+                                              saliency_matrix, self.recursive_pruning, bias_aware)
             (model, neurons_manipulated, pruned_pairs, saliency_matrix) = result
 
             count_pairs_pruned_curr_epoch = 0
@@ -84,60 +78,67 @@ class Sampler:
 
         elif self.mode == SamplingMode.GREEDY:
             result = pruning.pruning_greedy(model, big_map, prune_percentage,
-                   cumulative_impact_intervals,
-                   pooling_multiplier,
-                   neurons_manipulated,
-                   self.params,
-                   self.recursive_pruning,
-                   bias_aware,
-                   kaggle_credit=False)
-            (model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
+                                            cumulative_impact_intervals,
+                                            pooling_multiplier,
+                                            neurons_manipulated,
+                                            self.params,
+                                            self.recursive_pruning,
+                                            bias_aware,
+                                            kaggle_credit=False)
+            (model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals,
+             pruning_pairs_dict_overall_scores) = result
 
             count_pairs_pruned_curr_epoch = 0
             if pruned_pairs is not None:
                 for layer, pairs in enumerate(pruned_pairs):
                     if len(pairs) > 0:
                         if verbose > 0:
-                            print(" [DEBUG] Pruning", pairs, "at layer", str(layer))
+                            print(" [DEBUG] Pruning", pairs,
+                                  "at layer", str(layer))
                             print("      with assessment score ", end=' ')
                         for pair in pairs:
                             count_pairs_pruned_curr_epoch += 1
-                            print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                            print(
+                                round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
                         print()
 
         elif self.mode == SamplingMode.STOCHASTIC:
             result = pruning.pruning_stochastic(model, big_map, prune_percentage,
-                      cumulative_impact_intervals,
-                      neurons_manipulated,
-                      target_scores,
-                      self.params,
-                      self.recursive_pruning,
-                      bias_aware,
-                      kaggle_credit=False)
-            (model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
+                                                cumulative_impact_intervals,
+                                                neurons_manipulated,
+                                                target_scores,
+                                                self.params,
+                                                self.recursive_pruning,
+                                                bias_aware,
+                                                kaggle_credit=False)
+            (model, neurons_manipulated, target_scores, pruned_pairs,
+             cumulative_impact_intervals, pruning_pairs_dict_overall_scores) = result
 
             count_pairs_pruned_curr_epoch = 0
             if pruned_pairs is not None:
                 for layer, pairs in enumerate(pruned_pairs):
                     if len(pairs) > 0:
                         if verbose > 0:
-                            print(" [DEBUG] Pruning", pairs, "at layer", str(layer))
+                            print(" [DEBUG] Pruning", pairs,
+                                  "at layer", str(layer))
                             print("      with assessment score ", end=' ')
                             for pair in pairs:
                                 count_pairs_pruned_curr_epoch += 1
-                                print(round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                                print(
+                                    round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
                             print()
-                            print(" [DEBUG] Updated target scores at this layer:", round(target_scores[layer], 3))
-        
+                            print(" [DEBUG] Updated target scores at this layer:", round(
+                                target_scores[layer], 3))
+
         elif self.mode == SamplingMode.SCALE:
             result = pruning.pruning_scale_only_sparse(model, prune_percentage)
             (model) = result
 
             print(" >> Pruning accomplished.")
-        
+
         else:
             print("Sampling mode not recognized, execution aborted!")
-        
+
         result_dict = {
             'model': model,
             'neurons_manipulated': neurons_manipulated,
@@ -157,7 +158,7 @@ class Sampler:
         model: The model to be pruned.
         big_map: The matrix of correlation between every hidden unit pairs.
         prune_percentage: The goal of pruning (optional, 0.5 by default).
-        
+
         A dictionary data structure including the pruned model.
         """
         if self.mode_conv == SamplingMode.SCALE:
