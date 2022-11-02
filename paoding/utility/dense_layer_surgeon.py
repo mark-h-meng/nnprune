@@ -8,7 +8,9 @@ __license__ = "MIT"
 import enum
 import tensorflow as tf
 import numpy as np
-import os, shutil
+import os
+import shutil
+import paoding.utility.progress_bar as bar
 
 def load_param_and_config(model, debugging_output=False):
     # Take a 3 layer MLP as example:
@@ -86,21 +88,28 @@ def trim_weights(model, pruned_pairs):
     return w, g, cut_list_entire_model
 
 
-def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_fn=None):
+def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_fn=None, verbose=0):
     # Let's start building a model
     if os.path.exists(path):
         if os.path.isdir(path):
             shutil.rmtree(path)
         else:
             os.remove(path)
-        print("The given path is not available, overwriting the old file ...")
+        if verbose > 0:
+            print("The given path is not available, overwriting the old file ...")
 
     new_weights, config, cut_list = trim_weights(original_model, pruned_list)
     
     pruned_model = tf.keras.models.Sequential()
 
+    layers_count = len(config)
+    total_steps = layers_count*2
+
     for layer_idx, layer_config in enumerate(config):
-        print("Constructing layer", layer_idx)
+        bar.printprogress(layer_idx, total_steps-1, prefix = 'Reconstruction:', suffix = 'Constructing layer ' + str(layer_idx), length = 50)
+
+        if verbose > 0:
+            print("Constructing layer", layer_idx)
         if layer_idx == 0:
             if 'flatten' in config[layer_idx]['name']:
                 pruned_model.add(tf.keras.layers.Flatten(input_shape=config[0]['batch_input_shape'][1:]))
@@ -120,7 +129,8 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
                                                    activation=config[layer_idx]['activation'],
                                                    trainable=False))
             else:
-                print("Unable to construct layer", layer_idx, "due to incompatible layer type")
+                if verbose > 0:
+                    print("Unable to construct layer", layer_idx, "due to incompatible layer type")
         else:
             if 'dense' in config[layer_idx]['name']:
                 pruned_model.add(tf.keras.layers.Dense(config[layer_idx]['units'] - cut_list[layer_idx],
@@ -140,7 +150,8 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
                                                         strides=config[layer_idx]['strides'],
                                                         trainable=False))
             else:
-                print("Unable to construct layer", layer_idx, "due to incompatible layer type")
+                if verbose > 0:
+                    print("Unable to construct layer", layer_idx, "due to incompatible layer type")
 
     if loss_fn is None:
         loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True)
@@ -150,17 +161,20 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
     is_first_layer_input = False 
     if "conv2d_input" in original_model.layers[0].name:
         is_first_layer_input = True
-
+    
+    bar.printprogress(layer_idx + layers_count, total_steps-1, prefix = 'Reconstruction:', suffix = 'Setting parameters for layer ' + str(layer_idx), length = 50)
     for index, layer in enumerate(pruned_model.layers):
         if not "dense" in layer.name:
-            print("Setting the original weights to layer", index, layer.name)
+            if verbose > 0:
+                print("Setting the original weights to layer", index, layer.name)
             if is_first_layer_input:
                 layer.set_weights(original_model.layers[index + 1].get_weights())
             else:
                 layer.set_weights(original_model.layers[index].get_weights())
             
         else:
-            print("Setting the pruned weights to layer", index, layer.name)
+            if verbose > 0:
+                print("Setting the pruned weights to layer", index, layer.name)
             if is_first_layer_input:
                 layer.set_weights(new_weights[index + 1])
             else:
@@ -169,6 +183,7 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
     pruned_model.compile(optimizer=optimizer,
                          loss=loss_fn,
                          metrics=['accuracy'])
-    print(pruned_model.summary())
+    if verbose > 0:
+        print(pruned_model.summary())
     pruned_model.save(path)
     return pruned_model

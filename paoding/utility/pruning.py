@@ -402,7 +402,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
             dense_layers_count += 1
 
     dense_layers_pruned = 0
-    bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
+    bar.printprogress(dense_layers_pruned, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
 
     while layer_idx < num_layers - 1:
 
@@ -438,6 +438,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
             next_weights_neuron_as_rows = w[layer_idx + 1][0]
 
+            bar.printprogress(dense_layers_pruned+0.1, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Build saliency matrix for layer ' + str(layer_idx), length = 50)
+
             if verbose > 0:
                 print(" [DEBUG] Building saliency matrix for layer " +
                   str(layer_idx) + "...")
@@ -453,7 +455,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
             import pandas as pd
             df = pd.DataFrame(data=e_ij_matrix[layer_idx])
             
-            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Finish building saliency matrix for layer ' + str(layer_idx), length = 50)
+            bar.printprogress(dense_layers_pruned+0.2, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Build saliency matrix for layer ' + str(layer_idx), length = 50)
 
             # find the candidates neuron to be pruned according to the saliency
             if prune_percentage is not None:
@@ -612,7 +614,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
                     print(
                         " >> Insufficient number of pruning candidates, walk again ...")
 
-            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Finish sampling layer ' + str(layer_idx), length = 50)
+            bar.printprogress(dense_layers_pruned+0.7, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Finish sampling layer ' + str(layer_idx), length = 50)
 
             # Here we evaluate the impact to the output layer
             if cumul_impact_ints_curr_layer is None:
@@ -640,7 +642,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
             ##   operation will be perform at the end, if enabled.
             
             dense_layers_pruned += 1
-            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', 
+            bar.printprogress(dense_layers_pruned+0.9, dense_layers_count, prefix = 'Pruning Dense:', 
                 suffix = 'Complete layer ' + str(layer_idx) + " (" + model.layers[layer_idx].name + ')', length = 50)
             output_str = " >>> Pruning layer " + str(layer_idx) + " (" + model.layers[layer_idx].name + "): ["
             output_str_prune_items = []
@@ -672,7 +674,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
             else:
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
-            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
+            bar.printprogress(dense_layers_pruned+1, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
             if verbose > 0:
                 print("Pruning layer #", layer_idx,
                   "completed, updating definition hash map...")
