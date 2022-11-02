@@ -179,7 +179,8 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
                 layer.set_weights(new_weights[index + 1])
             else:
                 layer.set_weights(new_weights[index])
-                    
+    
+    bar.printprogress(total_steps-1, total_steps-1, prefix = 'Reconstruction:', suffix = 'Complete' + str(layer_idx), length = 50)        
     pruned_model.compile(optimizer=optimizer,
                          loss=loss_fn,
                          metrics=['accuracy'])
