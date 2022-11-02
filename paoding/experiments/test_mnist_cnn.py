@@ -40,7 +40,7 @@ optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
                                  test_labels) = datasets.mnist.load_data(path="mnist.npz")
 
 # Normalize pixel values to be between 0 and 1
-train_features = train_features.reshape(train_features.shape[0], 28, 28, 1) / 255.0, 
+train_features = train_features.reshape(train_features.shape[0], 28, 28, 1) / 255.0,
 test_features = test_features.reshape(test_features.shape[0], 28, 28, 1) / 255.0
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)

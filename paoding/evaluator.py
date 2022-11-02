@@ -26,7 +26,7 @@ class Evaluator:
         batch_size: The batch size of test samples for each pruning epoch (optional, 50 by default).
         attack_mode: The enumerated value to specify the attack algorithm applied for robustness preservation evaluation (optional, FGSM by default).
             [PS] Only FGSM is supported in the Alpha release, refer to the ``paoding.utility.option.AttackAlogirithm`` for the technical definition.
-        k: The value indicates if the top-k accuracy is used (optiona, 1 by default).  
+        k: The value indicates if the top-k accuracy is used (optiona, 1 by default).
         """
         if type(epsilons) == list:
             self.epsilons = epsilons
@@ -38,28 +38,28 @@ class Evaluator:
         if k > 1:
             self.metrics.append(tf.keras.metrics.TopKCategoricalAccuracy(k))
 
-    def get_epsilons(self): 
+    def get_epsilons(self):
         """Retrieve the epsilon parameters.
         Returns:
         epsilons: The collection of adversarial epsilons.
         """
         return self.epsilons
 
-    def get_batch_size(self): 
+    def get_batch_size(self):
         """Retrieve the batch size parameters.
         Returns:
         batch_size: The batch size of test samples for each pruning epoch.
         """
         return self.batch_size
-    
-    def set_epsilons(self, epsilons): 
+
+    def set_epsilons(self, epsilons):
         """Set the epsilon parameters.
         Args:
         epsilons: The collection of adversarial epsilons.
         """
         self.epsilons = epsilons
 
-    def set_batch_size(self, batch_size): 
+    def set_batch_size(self, batch_size):
         """Set the batch size parameters.
         Args:
         batch_size: The batch size of test samples for each pruning epoch.
@@ -69,7 +69,7 @@ class Evaluator:
     def evaluate_robustness(self, model, test_set, model_type, k=1):
         """
         Evaluate the model performance.
-        Args: 
+        Args:
         model: The neural network model to be used for robustness preservation evaluation.
         test_set: The tuple of test features and labels to be used for the evaluation.
         model_type: The enumerated value that specifies the model type.
@@ -81,7 +81,7 @@ class Evaluator:
             return self.__fgsm(model, test_set, model_type, k)
         else:
             print("Evaluation mode not set or set to an illegal value, please check!")
-        
+
     def __fgsm(self, model, test_set, model_type, k):
         test_features, test_labels = test_set
         if model_type == ModelType.XRAY:
@@ -101,7 +101,7 @@ class Evaluator:
                                                                 self.batch_size)
         elif model_type == ModelType.CIFAR:
             if k > 1:
-                robust_preservation = adversarial.robustness_evaluation_cifar_topK(model, 
+                robust_preservation = adversarial.robustness_evaluation_cifar_topK(model,
                                                                 (test_features, test_labels),
                                                                 self.epsilons,
                                                                 self.batch_size, k)

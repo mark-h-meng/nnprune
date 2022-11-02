@@ -18,7 +18,7 @@ import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 import cv2
-# VGG19 Model 
+# VGG19 Model
 from tensorflow.keras.applications.vgg19 import VGG19
 
 # Quick fix to encounter memory growth issue when working on shared GPU workstation
@@ -189,7 +189,7 @@ def train_creditcard_3_layer_mlp(train_data, test_data, path, overwrite=False,
         test_loss, test_accuracy = baseline_results[0], baseline_results[-4]
 
         test_predictions_baseline = model.predict(test_features, batch_size=BATCH_SIZE)
-        
+
         print("Final Accuracy achieved is: ", test_accuracy, "with Loss", test_loss)
 
         model.save(path)
@@ -293,22 +293,22 @@ def train_cifar_cnn(train_data,
 
         model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
         model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
-        model.add(layers.MaxPooling2D(pool_size=(2,2))) 
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
 
         model.add(layers.Conv2D(filters=256, kernel_size = (3,3), activation="relu"))
         model.add(layers.MaxPooling2D(pool_size=(2,2)))
-            
+
         model.add(layers.Flatten())
         model.add(layers.Dense(512, activation='relu'))
         model.add(layers.Dense(128, activation='relu'))
         model.add(layers.Dense(10, activation='softmax'))
 
         print(model.summary())
-        
+
         if topK <= 1:
             model.compile(optimizer=optimizer_config, loss=loss_fn,
                       metrics=['accuracy'])
-            
+
             training_history = model.fit(train_images, train_labels, epochs=epochs,
                                         validation_data=(val_images, val_labels))
 
@@ -316,10 +316,10 @@ def train_cifar_cnn(train_data,
             print("Final Accuracy achieved is: ", test_accuracy)
 
         else:
-            model.compile(optimizer=optimizer_config, 
+            model.compile(optimizer=optimizer_config,
                     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                     metrics=['accuracy', tf.keras.metrics.TopKCategoricalAccuracy(k=topK)])
-            
+
             training_history = model.fit(train_images, train_labels, epochs=epochs,
                                         validation_data=(val_images, val_labels))
 
@@ -376,11 +376,11 @@ def train_cifar_9_layer_cnn(train_data,
         model.add(layers.Dense(10, activation='softmax'))  # Result will be 10 outputs
 
         print(model.summary())
-        
+
         if topK <= 1:
             model.compile(optimizer=optimizer_config, loss=loss_fn,
                       metrics=['accuracy'])
-            
+
             training_history = model.fit(train_images, train_labels, epochs=epochs,
                                         validation_data=(val_images, val_labels))
 
@@ -388,10 +388,10 @@ def train_cifar_9_layer_cnn(train_data,
             print("Final Accuracy achieved is: ", test_accuracy)
 
         else:
-            model.compile(optimizer=optimizer_config, 
+            model.compile(optimizer=optimizer_config,
                     loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
                     metrics=['accuracy', tf.keras.metrics.TopKCategoricalAccuracy(k=topK)])
-            
+
             training_history = model.fit(train_images, train_labels, epochs=epochs,
                                         validation_data=(val_images, val_labels))
 
@@ -485,11 +485,11 @@ def train_mnist_cnn(train_data, test_data, path, overwrite=False, use_relu=True,
 
         model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
         model.add(layers.Conv2D(filters=128, kernel_size = (3,3), activation="relu"))
-        model.add(layers.MaxPooling2D(pool_size=(2,2))) 
+        model.add(layers.MaxPooling2D(pool_size=(2,2)))
 
         model.add(layers.Conv2D(filters=256, kernel_size = (3,3), activation="relu"))
         model.add(layers.MaxPooling2D(pool_size=(2,2)))
-            
+
         model.add(layers.Flatten())
         model.add(layers.Dense(512, activation='relu'))
         model.add(layers.Dense(128, activation='relu'))
@@ -701,7 +701,7 @@ def train_cifar_100_9_layer_cnn(train_data,
             print(path, " - model not found, create and train a new one ...")
         model = models.Sequential()
         # In the first layer, please provide the input shape (32,32,3)
-        
+
         model.add(layers.Conv2D(input_shape=(32, 32, 3), kernel_size=(2, 2), padding='same', strides=(2, 2), filters=32))
         model.add(layers.MaxPooling2D(pool_size=(2, 2), strides=(1, 1), padding='same'))
         model.add(layers.Conv2D(kernel_size=(2, 2), padding='same', strides=(2, 2), filters=64))
@@ -720,18 +720,18 @@ def train_cifar_100_9_layer_cnn(train_data,
         model.add(layers.Dense(100, activation='softmax'))  # Result will be 10 outputs
 
         print(model.summary())
-        
-        model.compile(optimizer=optimizer_config, 
+
+        model.compile(optimizer=optimizer_config,
                     loss=loss_fn,
                     metrics=['sparse_top_k_categorical_accuracy'])
-        
-                      
+
+
         augmenter = ImageDataGenerator(rescale=1.0/255.,
                              rotation_range=20,
-                             width_shift_range=0.1, 
-                             height_shift_range=0.1, 
-                             shear_range=0.1, 
-                             zoom_range=0.2, 
+                             width_shift_range=0.1,
+                             height_shift_range=0.1,
+                             shear_range=0.1,
+                             zoom_range=0.2,
                              fill_mode='nearest',
                              horizontal_flip=True)
         rescalator=ImageDataGenerator(rescale=1.0/255.)
@@ -759,7 +759,7 @@ def train_cifar_100_9_layer_cnn(train_data,
         dot_img_file = path + '.png'
         tf.keras.utils.plot_model(model, to_file=dot_img_file, show_shapes=True)
         print("Model has been saved")
-        
+
     else:
         print("Model found, there is no need to re-train the model ...")
 
@@ -814,7 +814,7 @@ def train_cifar_6_layer_mlp(train_data, test_data, path, overwrite=False,
         print("Model found, there is no need to re-train the model ...")
 
 
-def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False, 
+def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
                         optimizer_config = "RMSprop",
                         loss_fn ="categorical_crossentropy",
                         epochs=20):
@@ -836,7 +836,7 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
             print("TRAIN ANYWAY option enabled, create and train a new one ...")
         else:
             print(path, " - model not found, create and train a new one ...")
-        
+
         # Include top = add fully connected layers to layer.
         # Weights = use pretrained weights (trained in imagenet)
         vgg = VGG19(include_top=False,weights="imagenet",input_shape=(48,48,3))
@@ -844,11 +844,11 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
         model = models.Sequential()
         for layer in vgg.layers:
             model.add(layer)
-        
+
         # Ensure the vgg layers are not trainable
         for layer in model.layers:
             layer.trainable = False
-        
+
         # Adding (trainable) fully connected layers
         model.add(layers.Flatten())
         model.add(layers.Dense(256))
@@ -879,7 +879,7 @@ def transfer_vgg_19_cifar(train_data, test_data, path, overwrite=False,
 Since input image size is (32 x 32), first upsample the image by factor of (7x7) to transform it to (224 x 224)
 Connect the feature extraction and "classifier" layers to build the model.
 '''
-def transfer_resnet_50(train_data, test_data, path, overwrite=False, 
+def transfer_resnet_50(train_data, test_data, path, overwrite=False,
                         optimizer_config = "SGD",
                         loss_fn ="sparse_categorical_crossentropy",
                         epochs=3):
@@ -894,9 +894,9 @@ def transfer_resnet_50(train_data, test_data, path, overwrite=False,
             print("TRAIN ANYWAY option enabled, create and train a new one ...")
         else:
             print(path, " - model not found, create and train a new one ...")
-        
+
         inputs = tf.keras.layers.Input(shape=(32,32,3))
-    
+
         resize = tf.keras.layers.UpSampling2D(size=(7,7))(inputs)
 
         resnet_feature_extractor = transfer_resnet_feature_extractor(resize)
@@ -907,12 +907,12 @@ def transfer_resnet_50(train_data, test_data, path, overwrite=False,
         # Total params: 26,215,818
         # Trainable params: 26,162,698
         # Non-trainable params: 53,120
-        
-        model.compile(optimizer=optimizer_config, 
+
+        model.compile(optimizer=optimizer_config,
                         loss=loss_fn,
                         metrics = ['accuracy'])
 
-        hist = model.fit(train_images, train_labels, epochs=epochs, 
+        hist = model.fit(train_images, train_labels, epochs=epochs,
                             validation_data = (test_images, test_labels), batch_size=64)
         test_loss, test_accuracy = model.evaluate(test_images, test_labels, batch_size=64)
         print("Final Accuracy achieved is:", test_accuracy, "and the loss is:", test_loss)
@@ -921,10 +921,10 @@ def transfer_resnet_50(train_data, test_data, path, overwrite=False,
         print("Model has been saved")
     else:
         print("Model found, there is no need to re-train the model ...")
-  
+
 
 '''
-Feature Extraction is performed by ResNet50 pretrained on imagenet weights. 
+Feature Extraction is performed by ResNet50 pretrained on imagenet weights.
 Input size is 224 x 224.
 '''
 def transfer_resnet_feature_extractor(inputs):
