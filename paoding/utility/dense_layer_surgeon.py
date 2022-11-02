@@ -106,7 +106,7 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
     total_steps = layers_count*2
 
     for layer_idx, layer_config in enumerate(config):
-        bar.printprogress(layer_idx, total_steps-1, prefix = 'Reconstruction:', suffix = 'Constructing layer ' + str(layer_idx), length = 50)
+        bar.printprogress(layer_idx, total_steps, prefix = 'Reconstruction:', suffix = 'Constructing layer ' + str(layer_idx), length = 50)
 
         if verbose > 0:
             print("Constructing layer", layer_idx)
@@ -162,7 +162,7 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
     if "conv2d_input" in original_model.layers[0].name:
         is_first_layer_input = True
     
-    bar.printprogress(layer_idx + layers_count, total_steps-1, prefix = 'Reconstruction:', suffix = 'Setting parameters for layer ' + str(layer_idx), length = 50)
+    bar.printprogress(layer_idx + layers_count, total_steps, prefix = 'Reconstruction:', suffix = 'Setting parameters for layer ' + str(layer_idx), length = 50)
     for index, layer in enumerate(pruned_model.layers):
         if not "dense" in layer.name:
             if verbose > 0:
@@ -180,7 +180,7 @@ def create_pruned_model(original_model, pruned_list, path, optimizer=None, loss_
             else:
                 layer.set_weights(new_weights[index])
     
-    bar.printprogress(total_steps-1, total_steps-1, prefix = 'Reconstruction:', suffix = 'Complete' + str(layer_idx), length = 50)        
+    bar.printprogress(total_steps, total_steps, prefix = 'Reconstruction:', suffix = 'Complete', length = 50)        
     pruned_model.compile(optimizer=optimizer,
                          loss=loss_fn,
                          metrics=['accuracy'])

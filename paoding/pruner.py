@@ -130,7 +130,7 @@ class Pruner:
             print("Overwriting existing pruned model ...")
 
         self.model.save(path)
-        print(" >>> Pruned model saved")
+        print(" > Model saved")
 
     def evaluate(self, verbose=0, batch_size=None):
         """
@@ -322,9 +322,9 @@ class Pruner:
                         print(cumulative_impact_intervals)
 
                 percentage_been_pruned += self.pruning_step
-                print(" >> Pruned", num_pruned_curr_batch,
+                print(" > Pruned", num_pruned_curr_batch,
                       "hidden units in this epoch")
-                print(" >> Pruning progress:", bcolors.BOLD, str(
+                print(" > Pruning progress:", bcolors.BOLD, str(
                     round(percentage_been_pruned * 100, 2)) + "%", bcolors.ENDC)
 
                 self.model.compile(optimizer=self.optimizer,
@@ -353,7 +353,7 @@ class Pruner:
 
         # Stop elapsed time counting
         end_time = time.time()
-        print("Elapsed time: ", round((end_time - start_time)/60.0, 3),
+        print("> Elapsed time: ", round((end_time - start_time)/60.0, 3),
               "minutes /", int(end_time - start_time), "seconds")
 
         ################################################################
@@ -449,13 +449,13 @@ class Pruner:
 
         if save_file:
             self.model.save(pruned_model_path)
-            print(" >>> Pruned model saved")
+            print(" > Pruned model saved")
         else:
-            print(" >>> Pruned model won't be saved unless you set \"save_file\" True")
+            print(" > Pruned model won't be saved unless you set \"save_file\" True")
 
         # Stop elapsed time counting
         end_time = time.time()
-        print("Elapsed time: ", round((end_time - start_time)/60.0, 3),
+        print("> Elapsed time: ", round((end_time - start_time)/60.0, 3),
               "minutes /", int(end_time - start_time), "seconds")
 
         print("Pruning accomplished")
@@ -497,13 +497,13 @@ class Pruner:
 
         if save_file:
             self.model.save(pruned_model_path)
-            print(" >>> Pruned model saved")
+            print(" > Pruned model saved")
         else:
-            print(" >>> Pruned model won't be saved unless you set \"save_file\" True")
+            print(" > Pruned model won't be saved unless you set \"save_file\" True")
 
         # Stop elapsed time counting
         end_time = time.time()
-        print("Elapsed time: ", round((end_time - start_time)/60.0, 3),
+        print("> Elapsed time: ", round((end_time - start_time)/60.0, 3),
               "minutes /", int(end_time - start_time), "seconds")
 
         return self.model
