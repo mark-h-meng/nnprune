@@ -105,7 +105,7 @@ class Pruner:
         optimizer: The optimizer specified for evaluation purpose (optional, RMSprop with lr=0.01 by default).
         """
         self.model = tf.keras.models.load_model(self.model_path)
-        print(self.model.summary())
+        #print(self.model.summary())
 
         if optimizer is None:
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
@@ -150,12 +150,12 @@ class Pruner:
             t_features, t_labels = self.test_set
             startTime = datetime.now()
             loss, accuracy = self.model.evaluate(
-                t_features, t_labels, verbose=2, batch_size=batch_size)
+                t_features, t_labels, verbose=0, batch_size=batch_size)
             elapsed = datetime.now() - startTime
         else:
             startTime = datetime.now()
             loss, accuracy = self.model.evaluate(
-                self.test_set, verbose=2, batch_size=batch_size)
+                self.test_set, verbose=0, batch_size=batch_size)
             elapsed = datetime.now() - startTime
         if verbose > 0:
             print("Evaluation accomplished -- [ACC]", accuracy,
@@ -254,7 +254,7 @@ class Pruner:
                 self.model = tf.keras.models.load_model(pruned_model_path_conv)
                 self.model.compile(optimizer=self.optimizer,
                                    loss=self.loss, metrics=['accuracy'])
-                print(self.model.summary())
+                #print(self.model.summary())
                 model = self.model
 
             try:
@@ -336,8 +336,8 @@ class Pruner:
 
                     # Update score_board and tape_of_moves
                     score_board.append(robust_preservation)
-                    print(bcolors.OKGREEN + "[Epoch " + str(epoch_couter) +
-                          "]" + str(robust_preservation) + bcolors.ENDC)
+                    print(bcolors.OKGREEN + "[Eval. Epoch " + str(epoch_couter) +
+                          "] robust instances stat. " + str(robust_preservation) + bcolors.ENDC)
 
                 loss, accuracy = self.evaluate(verbose=1)
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
@@ -434,7 +434,7 @@ class Pruner:
         self.model.compile(optimizer=self.optimizer, loss=self.loss,
                            metrics=['accuracy'])
 
-        print("CONV pruning accomplished")
+        # print("CONV pruning accomplished")
 
         if self.test_set is not None:
             self.evaluate(verbose=1)
@@ -482,7 +482,7 @@ class Pruner:
         self.model.compile(optimizer=self.optimizer, loss=self.loss,
                            metrics=['accuracy'])
 
-        print("CONV pruning accomplished")
+        # print("CONV pruning accomplished")
 
         if self.test_set is not None:
             self.evaluate(verbose=1)
@@ -521,27 +521,28 @@ class Pruner:
     def print_welcome_header(self):
         #print("*** Welcome to Paoding-DL, A data-free NN pruning toolkit *** ")
         #print("======== M. H. Meng, G. Bai, S. G. Teo and J. S. Dong ======= ")
-        msg = f'|==================================================|\n' +\
-            '|________             _____________      paoding-dl|\n' +\
-            '|___  __ \_____ ____________  /__(_)_____________ _|\n' +\
-            '|__  /_/ /  __ `/  __ \  __  /__  /__  __ \_  __ `/|\n' +\
-            '|_  ____// /_/ // /_/ / /_/ / _  / _  / / /  /_/ / |\n' +\
-            '|/_/     \__,_/ \____/\__,_/  /_/  /_/ /_/_\__, /  |\n' +\
-            '|                                        /____/    |\n' +\
-            '|==================================================|\n' +\
-            '|      +-+ +-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+       |\n' +\
-            '|      |A| |D|a|t|a|-|f|r|e|e| |N|e|u|r|a|l|       |\n' +\
-            '| +-+-+-+-+-+-+-+++-+-+-+-+-+-+-+++-+-+-+-+-+-+-+  |\n' +\
-            '| |N|e|t|w|o|r|k| |P|r|u|n|i|n|g| |T|o|o|l|k|i|t|  |\n' +\
-            '| +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+  |\n' +\
-            '|==================================================|\n' +\
-            '| Paoding-DL is a research deliverable of a colla- |\n' +\
-            '| boration of scientists from:                     |\n' +\
-            '|                                                  |\n' +\
-            '|   National University of Singapore (Singapore)   |\n' +\
-            '|  Intitute for Infocomm Research, A*STAR (S\'pore) |\n' +\
-            '|     The University of Queensland (Australia)     |\n' +\
-            '|                                                  |\n' +\
-            '|                                    Copyright@2022|\n' +\
-            '|==================================================|'
+        msg = f'|============================================================|\n' +\
+            '|     ________             _____________         (paoding-dl)|\n' +\
+            '|     ___  __ \_____ ____________  /__(_)_____________ _     |\n' +\
+            '|     __  /_/ /  __ `/  __ \  __  /__  /__  __ \_  __ `/     |\n' +\
+            '|     _  ____// /_/ // /_/ / /_/ / _  / _  / / /  /_/ /      |\n' +\
+            '|     /_/     \__,_/ \____/\__,_/  /_/  /_/ /_/_\__, /       |\n' +\
+            '|                                              /____/        |\n' +\
+            '|============================================================|\n' +\
+            '|           +-+ +-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+            |\n' +\
+            '|           |A| |D|a|t|a|-|f|r|e|e| |N|e|u|r|a|l|            |\n' +\
+            '|      +-+-+-+-+-+-+-+++-+-+-+-+-+-+-+++-+-+-+-+-+-+-+       |\n' +\
+            '|      |N|e|t|w|o|r|k| |P|r|u|n|i|n|g| |T|o|o|l|k|i|t|       |\n' +\
+            '|      +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+ +-+-+-+-+-+-+-+       |\n' +\
+            '|============================================================|\n' +\
+            '| Paoding-DL is a research deliverable of a collaboration of |\n' +\
+            '|  scientists from:                                          |\n' +\
+            '|                                                            |\n' +\
+            '|        National University of Singapore (Singapore)        |\n' +\
+            '|       Intitute for Infocomm Research, A*STAR (S\'pore)      |\n' +\
+            '|          The University of Queensland (Australia)          |\n' +\
+            '|                                                            |\n' +\
+            '|                                             Copyright@2022 |\n' +\
+            '|============================================================|\n'
+        
         print(msg)
