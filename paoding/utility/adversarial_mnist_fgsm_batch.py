@@ -10,9 +10,8 @@ from tensorflow.keras import datasets, layers, models
 #import matplotlib.pyplot as plt
 import random
 import numpy as np
-import progressbar
-
 import paoding.utility.utils as utils
+import paoding.utility.progress_bar as bar
 # import matplotlib.gridspec as gridspec
 
 #mpl.rcParams['figure.figsize'] = (7, 7)
@@ -230,10 +229,9 @@ def robustness_evaluation(model, dataset, epsilons, num_iteration, flatten_first
     # Here we use a fix range of test samples to ensure fairness of experiments
     sample_indexes = list(range(0, num_iteration))
 
-    bar = progressbar.ProgressBar(maxval=num_iteration,
-                                  widgets=[progressbar.Bar('=', 'ADVERSARIAL EVALUATION [', ']'), ' ', progressbar.Percentage()])
-    bar.start()
-
+    
+    bar.printprogress(0, num_iteration-1, prefix = 'Adversarial Eval:', suffix = 'Complete', length = 50)
+    
     for sample_index in sample_indexes:
 
         indexes_to_investigae = []
@@ -315,7 +313,9 @@ def robustness_evaluation(model, dataset, epsilons, num_iteration, flatten_first
             # Record the maximum epsilon that the classifier still not to misbehave
             if image_class == adv_class:
                 robustness_stat_dict[eps] = robustness_stat_dict[eps] + 1
-        bar.update(sample_index)
+                
+        bar.printprogress(sample_index, num_iteration-1, prefix = 'Adversarial Eval:', suffix = 'Complete', length = 50)
+
     bar.finish()
 
     return robustness_stat_dict
@@ -345,10 +345,8 @@ def robustness_evaluation_cifar(model, dataset, epsilons, num_iteration):
     # Here we use a fix range of test samples to ensure fairness of experiments
     sample_indexes = list(range(0, num_iteration))
 
-    bar = progressbar.ProgressBar(maxval=num_iteration,
-                                  widgets=[progressbar.Bar('=', 'ADVERSARIAL EVALUATION [', ']'), ' ', progressbar.Percentage()])
-    bar.start()
-
+    bar.printprogress(0, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
+    
     for sample_index in sample_indexes:
 
         indexes_to_investigae = []
@@ -426,7 +424,7 @@ def robustness_evaluation_cifar(model, dataset, epsilons, num_iteration):
             #else:
                 #print("#",sample_index,"; original label:",image_class,"; attack label:",adv_class)
                 #print(str(sample_index), end=" ")
-        bar.update(sample_index)
+        bar.printprogress(sample_index, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
     bar.finish()
 
     return robustness_stat_dict
@@ -456,9 +454,7 @@ def robustness_evaluation_cifar_topK(model, dataset, epsilons, num_iteration, k)
     # Here we use a fix range of test samples to ensure fairness of experiments
     sample_indexes = list(range(0, num_iteration))
 
-    bar = progressbar.ProgressBar(maxval=num_iteration,
-                                  widgets=[progressbar.Bar('=', 'ADVERSARIAL EVALUATION [', ']'), ' ', progressbar.Percentage()])
-    bar.start()
+    bar.printprogress(0, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
 
     for sample_index in sample_indexes:
 
@@ -537,7 +533,8 @@ def robustness_evaluation_cifar_topK(model, dataset, epsilons, num_iteration, k)
             #else:
                 #print("#",sample_index,"; original label:",target_labels[0],"; attack label:",adv_class, " -- not in top K result", image_classes)
                 #print(str(sample_index), end=" ")
-        bar.update(sample_index)
+        bar.printprogress(sample_index, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
+
     bar.finish()
 
     return robustness_stat_dict
@@ -566,9 +563,7 @@ def robustness_evaluation_chest(model, dataset, epsilons, num_iteration):
     sample_indexes = random.sample(range(0, len(test_images)), num_iteration)
     #sample_indexes = list(range(0, num_iteration))
 
-    bar = progressbar.ProgressBar(maxval=num_iteration,
-                                  widgets=[progressbar.Bar('=', 'ADVERSARIAL EVALUATION [', ']'), ' ', progressbar.Percentage()])
-    bar.start()
+    bar.printprogress(0, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
 
     for count, sample_index in enumerate(sample_indexes):
 
@@ -646,9 +641,8 @@ def robustness_evaluation_chest(model, dataset, epsilons, num_iteration):
                 robustness_stat_dict[eps] = robustness_stat_dict[eps] + 1
             # else:
                 # print("Adv class is", adv_class, "but expected class is", image_class)
+        bar.printprogress(count, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
 
-        bar.update(count)
-    bar.finish()
 
     return robustness_stat_dict
 
@@ -676,10 +670,8 @@ def robustness_evaluation_kaggle(model, dataset, epsilons, num_iteration):
     
     # Here we use a fix range of test samples to ensure fairness of experiments
     sample_indexes = list(range(0, num_iteration))
-
-    bar = progressbar.ProgressBar(maxval=num_iteration,
-                                  widgets=[progressbar.Bar('=', 'ADVERSARIAL EVALUATION [', ']'), ' ', progressbar.Percentage()])
-    bar.start()
+    
+    bar.printprogress(0, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
 
     for sample_index in sample_indexes:
 
@@ -736,7 +728,8 @@ def robustness_evaluation_kaggle(model, dataset, epsilons, num_iteration):
             if benign_label == adv_class:
                 robustness_stat_dict[eps] = robustness_stat_dict[eps] + 1
 
-        bar.update(sample_index)
+        bar.printprogress(sample_index, num_iteration-1, prefix = 'Robustness Eval.:', suffix = 'Complete', length = 50)
+
     bar.finish()
 
     return robustness_stat_dict

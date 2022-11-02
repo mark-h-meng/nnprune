@@ -33,7 +33,6 @@ setup(
         tf_dependency,
         'scikit-learn',
         'pandas',
-        'progressbar2',
         'opencv-python>=4.5'
         'numpy',
         'tabulate',

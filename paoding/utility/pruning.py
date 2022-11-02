@@ -7,6 +7,7 @@ __license__ = "MIT"
 import paoding.utility.bcolors as bcolors
 import paoding.utility.saliency as saliency
 import paoding.utility.utils as utils
+import paoding.utility.progress_bar as bar
 import paoding.utility.interval_arithmetic as ia
 import paoding.utility.simulated_propagation as simprop
 from paoding.utility.surgeon.surgeon import Surgeon
@@ -394,6 +395,14 @@ def pruning_stochastic(model, big_map, prune_percentage,
         target_scores = []
 
     e_ij_matrix = []
+    # Here we do a quick calculation of how many dense layers to process
+    dense_layers_count = 0
+    for layer in model.layers:
+        if "dense" in layer.name:
+            dense_layers_count += 1
+
+    dense_layers_pruned = 0
+    bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
 
     while layer_idx < num_layers - 1:
 
@@ -409,6 +418,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
         e_ij_matrix.append(None)
         pruning_pairs_dict_overall_scores.append(None)
 
+        
         # Exclude non FC layers
         if "dense" in model.layers[layer_idx].name:
             # print("Pruning Operation Looking at Layer", layer_idx)
@@ -442,6 +452,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
             import pandas as pd
             df = pd.DataFrame(data=e_ij_matrix[layer_idx])
+            
+            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Finish building saliency matrix for layer ' + str(layer_idx), length = 50)
 
             # find the candidates neuron to be pruned according to the saliency
             if prune_percentage is not None:
@@ -600,6 +612,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
                     print(
                         " >> Insufficient number of pruning candidates, walk again ...")
 
+            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Finish sampling layer ' + str(layer_idx), length = 50)
+
             # Here we evaluate the impact to the output layer
             if cumul_impact_ints_curr_layer is None:
                 cumul_impact_ints_curr_layer = simprop.calculate_impact_of_pruning_next_layer(
@@ -625,6 +639,9 @@ def pruning_stochastic(model, big_map, prune_percentage,
             ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting 
             ##   operation will be perform at the end, if enabled.
             
+            dense_layers_pruned += 1
+            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', 
+                suffix = 'Complete layer ' + str(layer_idx) + " (" + model.layers[layer_idx].name + ')', length = 50)
             output_str = " >>> Pruning layer " + str(layer_idx) + " (" + model.layers[layer_idx].name + "): ["
             output_str_prune_items = []
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
@@ -639,7 +656,10 @@ def pruning_stochastic(model, big_map, prune_percentage,
                 total_pruned_count += 1
             output_str += ",".join(output_str_prune_items)
             output_str += "]"
-            print(output_str)
+            
+            if verbose > 0:
+                print(output_str)
+            
             # Save the modified parameters to the model
             model.layers[layer_idx + 1].set_weights(w[layer_idx + 1])
 
@@ -652,13 +672,14 @@ def pruning_stochastic(model, big_map, prune_percentage,
             else:
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
-
-            print("Pruning layer #", layer_idx,
+            bar.printprogress(dense_layers_pruned, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
+            if verbose > 0:
+                print("Pruning layer #", layer_idx,
                   "completed, updating definition hash map...")
-            # TEMP IMPLEMENTATION ENDS HERE
-
+            
         layer_idx += 1
-
+    
+    bar.finish()
     if verbose > 0:
         print(" [DEBUG] size of cumulative impact total",
           len(cumulative_impact_intervals))
@@ -712,13 +733,17 @@ def prune_multiple_layers(model, pruned_matrix):
     to_prune = pruned_matrix
     to_prune[:,0] = np.array([conv_indexes[i] for i in to_prune[:,0]])
     layers_to_prune = np.unique(to_prune[:,0])
-    for layer_ix in layers_to_prune :
+    bar.printprogress(0, len(layers_to_prune)-1, prefix = 'Pruning Conv2D:', suffix = 'Complete.', length = 50)
+    for index, layer_ix in enumerate(layers_to_prune) :
         # print(" +++ PRUNING LAYER", layer_ix, model.layers[layer_ix].name)
         pruned_filters = [x[1] for x in to_prune if x[0]==layer_ix]
         pruned_layer = model.layers[layer_ix]
-        print(" >>> Prunning layer", layer_ix, "(" + model.layers[layer_ix].name + "):", pruned_filters)
+        bar.printprogress(index, len(layers_to_prune)-1, prefix = 'Pruning Conv2D:', 
+            suffix = 'Complete.', length = 50)
+        #print(" >>> Prunning layer", layer_ix, "(" + model.layers[layer_ix].name + "):", pruned_filters)
         surgeon.add_job('delete_channels', pruned_layer, channels=pruned_filters)
     
+    bar.finish()
     model_pruned = surgeon.operate()
     
     return model_pruned

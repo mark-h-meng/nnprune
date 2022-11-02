@@ -6,6 +6,7 @@ from tensorflow.keras.layers import BatchNormalization
 from tensorflow.keras.models import Model
 
 from paoding.utility.surgeon import utils
+import paoding.utility.progress_bar as bar
 from ._utils.tensor_dict import TensorDict
 from ._utils import node as node_utils
 
@@ -332,7 +333,7 @@ class Surgeon:
         else:
             temp_layer, new_mask = self._apply_delete_mask(node, input_masks)
             # This call is needed to initialise input_shape and output_shape
-            print(">>>>>>>>> DELETING ", inputs)
+            #print(">>>>>>>>> DELETING ", inputs)
             temp_layer(utils.single_element(inputs))
             new_layer = self._delete_channel_weights(temp_layer, channels)
             if layer_name:

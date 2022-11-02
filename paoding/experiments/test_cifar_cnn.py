@@ -62,12 +62,12 @@ while(round<1):
 
     pruner.load_model(optimizer=optimizer, loss=loss_fn)
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
     pruned_model_path = model_path + "_pruned"
     pruner.prune(evaluator=evaluator, pruned_model_path=pruned_model_path,
                 model_name=model_name, save_file=True)
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
     pruner.quantization()
     pruner.gc()
     round += 1

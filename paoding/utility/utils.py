@@ -7,7 +7,7 @@ __license__ = "MIT"
 import math, os, errno
 from operator import add
 import numpy as np
-import progressbar
+import paoding.utility.progress_bar as bar
 
 
 def round_up(n, decimals=0):
@@ -155,10 +155,8 @@ def get_pairs_with_least_saliency_robust_preserved(df, robustness_impact, next_p
     cumulative_impact = [0.0 for i in range(0, len(robustness_impact[0][0]))]
 
     #print(" >> target at pruning", num_candidates, "units at the current layer ")
-
-    bar = progressbar.ProgressBar(maxval=num_candidates,
-                                  widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-    bar.start()
+    
+    bar.printprogress(0, num_candidates, prefix = 'Sampling Progress:', suffix = 'Complete', length = 50)
 
     # Return the requested number of pruning pairs or all possible pairs, which is smallest
     while len(list_to_prune) < num_candidates and len(au_corr) > 0:
@@ -212,7 +210,8 @@ def get_pairs_with_least_saliency_robust_preserved(df, robustness_impact, next_p
 
         #print(".", end="")
         #print(" >> a new candidate of pruning found, ", int(num_candidates-len(list_to_prune)), "left...")
-        bar.update(len(list_to_prune))
+        bar.printprogress(len(list_to_prune), num_candidates, prefix = 'Sampling Progress:', suffix = 'Complete', length = 50)
+        
     bar.finish()
     print("")
     return list_to_prune, cumulative_impact

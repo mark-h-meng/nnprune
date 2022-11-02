@@ -306,11 +306,11 @@ while(round<1):
 
     pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
 
     pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
     # pruner.quantization()
     pruner.gc()
 
