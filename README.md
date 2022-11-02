@@ -1,11 +1,10 @@
-# PAODING-DL: A Stochastic Data-free Robustness-preserving Neural Network Pruning Solution
+# PAODING-DL: A Data-free Robustness-preserving Neural Network Pruning Toolkit
 
 Our python package performs pruning progressively and evaluate robustness automatically. The code is written and tested through Microsoft VS Code.
 
 The execution environment of the experiments is summarised as follows: 
-* Tensorflow 2.3.0 (Anaconda, tensorflow-gpu version)
-* Python 3.8
-* Ubuntu 20.04 LTS
+* Tensorflow 2.3.0 (Anaconda, tensorflow-gpu version) and above
+* Python 3.8 and above
 
 ## Instructions
 
