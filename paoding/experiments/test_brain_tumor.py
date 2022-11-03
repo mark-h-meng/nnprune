@@ -137,7 +137,7 @@ test_generator=train_datagen.flow_from_directory(
 
 repeat = 5
 round = 0
-while(round<1):
+while(round < repeat):
 
     train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
                         optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
@@ -147,12 +147,12 @@ while(round<1):
     model_name = "MRI"
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
+    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.5, 0.5))
 
     pruner = Pruner(model_path,
             test_generator,
-            target=0.23,
-            step=0.05,
+            target=0.5,
+            step=0.025,
             sample_strategy=sampler,
             model_type=ModelType.MRI,
             stepwise_cnn_pruning=True)

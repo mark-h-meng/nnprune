@@ -25,7 +25,7 @@ class Sampler:
         self.mode_conv = SamplingMode.SCALE
         self.recursive_pruning = recursive_pruning
 
-    def set_strategy(self, mode, params=(0.75, 0.25), recursive_pruning=False):
+    def set_strategy(self, mode, params=(0.75, 0.25), recursive_pruning=True):
         """Set the sampling strategy.
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
@@ -98,9 +98,10 @@ class Sampler:
                             print("      with assessment score ", end=' ')
                         for pair in pairs:
                             count_pairs_pruned_curr_epoch += 1
-                            print(
-                                round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
-                        print()
+                            if verbose > 0:
+                                print(
+                                    round(pruning_pairs_dict_overall_scores[layer][pair], 3), end=' ')
+                        
 
         elif self.mode == SamplingMode.STOCHASTIC:
             result = pruning.pruning_stochastic(model, big_map, prune_percentage,

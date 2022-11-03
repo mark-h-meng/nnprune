@@ -147,7 +147,7 @@ def pruning_baseline(model, big_map, prune_percentage=None,
 # Our impact based method 
 def pruning_impact_based(model, big_map, prune_percentage,
                    cumulative_impact_intervals,
-                   pooling_multiplier=1,
+                   pooling_multiplier=2,
                    neurons_manipulated=None,
                    hyperparamters=(0.5, 0.5),
                    recursive_pruning=True,
