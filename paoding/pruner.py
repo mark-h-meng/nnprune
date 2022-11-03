@@ -22,7 +22,6 @@ from paoding.utility.option import SamplingMode, ModelType
 import paoding.utility.utils as utils
 import paoding.utility.bcolors as bcolors
 import paoding.utility.simulated_propagation as simprop
-import paoding.utility.model_profiler.profiler as profiler
 import paoding.utility.dense_layer_surgeon as surgeon
 
 
@@ -162,8 +161,6 @@ class Pruner:
                   "[LOSS]", loss, "[Elapsed Time]", elapsed)
         return loss, accuracy
 
-    def profile(self):
-        print(profiler.model_profiler(self.model, batch_size=1))
 
     def quantization(self):
         converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
@@ -339,7 +336,7 @@ class Pruner:
                     print(bcolors.OKGREEN + "[Eval. Epoch " + str(epoch_couter) +
                           "] robust instances stat. " + str(robust_preservation) + bcolors.ENDC)
 
-                loss, accuracy = self.evaluate(verbose=0)
+                loss, accuracy = self.evaluate(verbose=1)
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
 
                 tape_of_moves.append(pruned_pairs)
