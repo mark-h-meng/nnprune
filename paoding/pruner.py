@@ -104,7 +104,7 @@ class Pruner:
         optimizer: The optimizer specified for evaluation purpose (optional, RMSprop with lr=0.01 by default).
         """
         self.model = tf.keras.models.load_model(self.model_path)
-        #print(self.model.summary())
+        print(self.model.summary())
 
         if optimizer is None:
             self.optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
@@ -164,17 +164,18 @@ class Pruner:
 
     def quantization(self):
         converter = tf.lite.TFLiteConverter.from_keras_model(self.model)
-        tflite_model = converter.convert()
         tflite_models_dir = Path('paoding/models/tflite_models/')
         tflite_models_dir.mkdir(exist_ok=True, parents=True)
         model_filename = self.model_type.name + ".tflite"
         tflite_model_file = tflite_models_dir/model_filename
-        tflite_model_file.write_bytes(tflite_model)
+        if not os.path.exists(tflite_model_file):
+            tflite_model = converter.convert()
+            tflite_model_file.write_bytes(tflite_model)
         print(" >> Size after pruning:", os.path.getsize(tflite_model_file))
         converter.optimizations = [tf.lite.Optimize.DEFAULT]
         converter.target_spec.supported_types = [tf.float16]
         tflite_fp16_model = converter.convert()
-        model_filename_f16 = self.model_type.name + "_quant_f16.tflite"
+        model_filename_f16 = self.model_type.name + "_" + str(int(self.pruning_target*100)) + "_quant_f16.tflite"
         tflite_model_fp16_file = tflite_models_dir/model_filename_f16
         tflite_model_fp16_file.write_bytes(tflite_fp16_model)
         print(" >> Size after quantization:",
@@ -405,8 +406,8 @@ class Pruner:
             final_model_path = pruned_model_path
             self.model = surgeon.create_pruned_model(
                 self.model, pruned_pairs_all_steps, final_model_path, optimizer=self.optimizer, loss_fn=self.loss)
-        else:
-            print(self.model.summary())
+        
+        print(self.model.summary())
         print("FC pruning accomplished")
 
     def prune_cnv(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0):

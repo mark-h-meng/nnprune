@@ -275,7 +275,7 @@ x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=42)
 train_features, val_features, train_labels, val_labels = train_test_split(x_train, y_train,
                                                                               test_size=0.2, train_size=0.8)
 
-repeat = 5
+repeat = 1
 round = 0
 while(round<repeat):
 
@@ -293,6 +293,7 @@ while(round<repeat):
 
     target = 0.5
     step = 0.03125
+   
 
     pruner = Pruner(model_path,
                 (x_test, y_test),

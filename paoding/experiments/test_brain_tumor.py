@@ -21,7 +21,7 @@ from sklearn.model_selection import train_test_split
 
 def train_brain_cnn(train_data, test_data, path, overwrite=False,
                             optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
-                            epochs=40):
+                            epochs=20):
     
     # Let's start building a model
     if not os.path.exists(path) or overwrite:
@@ -49,11 +49,11 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
             layers.MaxPooling2D(pool_size=(2,2)),
             #layers.Dropout(.2),
 
-            layers.Conv2D(128,kernel_size=filter_size,activation='relu'),
+            layers.Conv2D(256,kernel_size=filter_size,activation='relu'),
             #layers.BatchNormalization(),
             layers.MaxPooling2D(pool_size=(2,2)),
             #layers.Dropout(.2),
-            
+                        
             layers.Flatten(),
             layers.Dense(512,activation='relu'),
             layers.Dense(128,activation='relu'),            
@@ -135,7 +135,7 @@ test_generator=train_datagen.flow_from_directory(
     target_size=(img_size,img_size)
 )
 
-repeat = 5
+repeat = 1
 round = 0
 while(round < repeat):
 
@@ -147,7 +147,7 @@ while(round < repeat):
     model_name = "MRI"
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.5, 0.5))
+    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
 
     pruner = Pruner(model_path,
             test_generator,

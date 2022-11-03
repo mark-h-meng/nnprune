@@ -31,8 +31,9 @@ print("Training dataset size: ", train_features.shape, train_labels.shape)
 optimizer = tf.keras.optimizers.Adam(learning_rate=0.001)
 loss_fn = tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False)
 
+repeat = 1
 round = 0
-while(round<1):
+while(round<repeat):
 
     training_from_data.train_cifar_cnn((train_features, train_labels),
                                             (test_features, test_labels),
@@ -44,11 +45,11 @@ while(round<1):
                                             epochs=40)
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25), recursive_pruning=True)
+    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25), recursive_pruning=True)
 
     model_name = 'CIFAR'
-    target = 0.25
-    step = 0.05
+    target = 0.5
+    step = 0.025
 
     evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)
     pruner = Pruner(model_path,
@@ -68,6 +69,7 @@ while(round<1):
                 model_name=model_name, save_file=True)
 
     #pruner.evaluate(verbose=1)
-    pruner.quantization()
+    if round == repeat - 1:
+        pruner.quantization()
     pruner.gc()
     round += 1

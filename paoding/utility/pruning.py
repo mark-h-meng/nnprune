@@ -171,7 +171,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
     
     # Here we do a quick calculation of how many dense layers to process
     dense_layers_count = 0
-    for layer in model.layers:
+    for layer in model.layers[:-1]:
         if "dense" in layer.name:
             dense_layers_count += 1
 
@@ -373,7 +373,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
                 print("Pruning layer #", layer_idx,
                     "completed, updating definition hash map...")
             # TEMP IMPLEMENTATION ENDS HERE
-
+            dense_layers_pruned += 1
         layer_idx += 1
     bar.finish()
     if verbose > 0:
@@ -655,7 +655,6 @@ def pruning_stochastic(model, big_map, prune_percentage,
             ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting 
             ##   operation will be perform at the end, if enabled.
             
-            dense_layers_pruned += 1
             bar.printprogress(dense_layers_pruned+0.9, dense_layers_count, prefix = 'Pruning Dense:', 
                 suffix = 'Complete layer ' + str(layer_idx) + " (" + model.layers[layer_idx].name + ')', length = 50)
             output_str = " >>> Pruning layer " + str(layer_idx) + " (" + model.layers[layer_idx].name + "): ["
@@ -689,6 +688,8 @@ def pruning_stochastic(model, big_map, prune_percentage,
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
             bar.printprogress(dense_layers_pruned+1, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
+            
+            dense_layers_pruned += 1
             if verbose > 0:
                 print("Pruning layer #", layer_idx,
                   "completed, updating definition hash map...")
