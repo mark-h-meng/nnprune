@@ -135,6 +135,7 @@ test_generator=train_datagen.flow_from_directory(
     target_size=(img_size,img_size)
 )
 
+repeat = 5
 round = 0
 while(round<1):
 
@@ -146,7 +147,7 @@ while(round<1):
     model_name = "MRI"
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
 
     pruner = Pruner(model_path,
             test_generator,
@@ -159,12 +160,13 @@ while(round<1):
     pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
                         loss = 'sparse_categorical_crossentropy')
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
 
     pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-    pruner.evaluate(verbose=1)
+    #pruner.evaluate(verbose=1)
 
-    pruner.quantization()
+    if round == repeat - 1:
+        pruner.quantization()
     pruner.gc()
     round += 1

@@ -268,7 +268,7 @@ class Pruner:
 
             if no_fc_to_prune:
 
-                loss, accuracy = self.evaluate(verbose=1)
+                loss, accuracy = self.evaluate(verbose=0)
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
                 tape_of_moves.append([])
 
@@ -339,7 +339,7 @@ class Pruner:
                     print(bcolors.OKGREEN + "[Eval. Epoch " + str(epoch_couter) +
                           "] robust instances stat. " + str(robust_preservation) + bcolors.ENDC)
 
-                loss, accuracy = self.evaluate(verbose=1)
+                loss, accuracy = self.evaluate(verbose=0)
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
 
                 tape_of_moves.append(pruned_pairs)
@@ -437,7 +437,7 @@ class Pruner:
         # print("CONV pruning accomplished")
 
         if self.test_set is not None:
-            self.evaluate(verbose=1)
+            self.evaluate(verbose=0)
 
         if evaluator is not None and self.test_set is not None:
             robust_preservation = self.robustness_evaluator.evaluate_robustness(
@@ -485,7 +485,7 @@ class Pruner:
         # print("CONV pruning accomplished")
 
         if self.test_set is not None:
-            self.evaluate(verbose=1)
+            self.evaluate(verbose=0)
 
         if evaluator is not None and self.test_set is not None:
             robust_preservation = self.robustness_evaluator.evaluate_robustness(
