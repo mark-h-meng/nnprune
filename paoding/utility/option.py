@@ -18,7 +18,8 @@ class ModelType(Enum):
 
 class SamplingMode(Enum):
     BASELINE = 1
-    GREEDY = 2
+    IMPACT = 2
+    # STOCHASTIC is working in progress now
     STOCHASTIC = 3
     SCALE = 0
     OTHER = -1

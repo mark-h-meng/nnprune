@@ -139,12 +139,13 @@ def pruning_baseline(model, big_map, prune_percentage=None,
 
             pruned_pairs[layer_idx].extend(pruning_pairs_curr_layer_baseline)
         layer_idx += 1
-    print("Pruning accomplished -", total_pruned_count, "units have been pruned")
+    if verbose > 0:
+        print("Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, pruned_pairs, saliency_matrix
 
 
-# Our greedy method without stochastic heuristic
-def pruning_greedy(model, big_map, prune_percentage,
+# Our impact based method 
+def pruning_impact_based(model, big_map, prune_percentage,
                    cumulative_impact_intervals,
                    pooling_multiplier=1,
                    neurons_manipulated=None,
@@ -167,6 +168,15 @@ def pruning_greedy(model, big_map, prune_percentage,
         neurons_manipulated = []
 
     e_ij_matrix = []
+    
+    # Here we do a quick calculation of how many dense layers to process
+    dense_layers_count = 0
+    for layer in model.layers:
+        if "dense" in layer.name:
+            dense_layers_count += 1
+
+    dense_layers_pruned = 0
+    bar.printprogress(dense_layers_pruned, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
 
     while layer_idx < num_layers - 1:
 
@@ -222,6 +232,7 @@ def pruning_greedy(model, big_map, prune_percentage,
             top_candidates = utils.get_pairs_with_least_saliency(df, neurons_manipulated[layer_idx],
                                                                  num_candidates=num_candidates_to_gen * pooling_multiplier)
 
+            bar.printprogress(dense_layers_pruned+0.5, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Prioritizing candidates of layer '+str(layer_idx), length = 50)
             # Just return if there is no candidates to prune
             if len(top_candidates) == 0:
                 return model, neurons_manipulated, [], cumulative_impact_intervals, pruning_pairs_dict_overall_scores
@@ -282,11 +293,11 @@ def pruning_greedy(model, big_map, prune_percentage,
                     node_a, node_b)] = big_ENT
 
                 (alpha, beta) = hyperparamters
-                print((node_a, node_b), "Ent:", big_ENT)
+                # print((node_a, node_b), "Ent:", big_ENT)
                 # pruning_pairs_dict_overall_scores[(node_a, node_b)] = pruning_candidate.values[0] * (big_L * alpha + big_ENT * beta)
                 pruning_pairs_dict_overall_scores[layer_idx][(
                     node_a, node_b)] = big_L * alpha + big_ENT * beta
-
+            bar.printprogress(dense_layers_pruned+0.8, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Pruning in progress', length = 50)
             count = 0
 
             pruning_pairs_dict_overall_scores[layer_idx] = dict(sorted(
@@ -328,10 +339,11 @@ def pruning_greedy(model, big_map, prune_percentage,
                                                                                                       cumul_impact_ints_curr_layer,
                                                                                                       layer_idx+1))
 
-            print(" >> DEBUG: len(cumulative_impact_curr_layer_pruning_to_next_layer):", len(
-                cumul_impact_ints_curr_layer))
-            print(" >> DEBUG: len(cumulative_impact_to_output_layer):",
-                  len(cumulative_impact_intervals))
+            if verbose > 0:
+                print(" >> DEBUG: len(cumulative_impact_curr_layer_pruning_to_next_layer):", len(
+                    cumul_impact_ints_curr_layer))
+                print(" >> DEBUG: len(cumulative_impact_to_output_layer):",
+                    len(cumulative_impact_intervals))
 
             # Now let's do pruning (simulated, by zeroing out weights but keeping neurons in the network)
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
@@ -355,17 +367,19 @@ def pruning_greedy(model, big_map, prune_percentage,
             else:
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
-
-            print("Pruning layer #", layer_idx,
-                  "completed, updating definition hash map...")
+            
+            bar.printprogress(dense_layers_pruned+1, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
+            if verbose>0:
+                print("Pruning layer #", layer_idx,
+                    "completed, updating definition hash map...")
             # TEMP IMPLEMENTATION ENDS HERE
 
         layer_idx += 1
-
+    bar.finish()
     if verbose > 0:
         print(" [DEBUG] Size of cumulative impact total",
           len(cumulative_impact_intervals))
-    print(" >> Pruning accomplished -", total_pruned_count, "units have been pruned")
+        print(" >> Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
 
 
@@ -685,7 +699,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
     if verbose > 0:
         print(" [DEBUG] size of cumulative impact total",
           len(cumulative_impact_intervals))
-    print("Pruning accomplished -", total_pruned_count, "units have been pruned")
+        print("Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, target_scores, pruned_pairs, cumulative_impact_intervals, pruning_pairs_dict_overall_scores
 
 

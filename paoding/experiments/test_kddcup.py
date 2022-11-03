@@ -275,9 +275,9 @@ x_train, x_test, y_train, y_test = train_test_split(X, Y, random_state=42)
 train_features, val_features, train_labels, val_labels = train_test_split(x_train, y_train,
                                                                               test_size=0.2, train_size=0.8)
 
-  
+repeat = 5
 round = 0
-while(round<1):
+while(round<repeat):
 
     if not LARGE_MODEL:
         train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
@@ -289,9 +289,9 @@ while(round<1):
                                 epochs=10)
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25), recursive_pruning=True)
+    sampler.set_strategy(mode=SamplingMode.IMPACT, recursive_pruning=True)
 
-    target = 0.03125
+    target = 0.5
     step = 0.03125
 
     pruner = Pruner(model_path,
@@ -301,17 +301,15 @@ while(round<1):
                 sample_strategy=sampler,
                 model_type=ModelType.KDD,
                 stepwise_cnn_pruning=True, 
-                seed_val=42,
+                #seed_val=42,
                 surgery_mode=True)
 
     pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
-    #pruner.evaluate(verbose=1)
-
     pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-    #pruner.evaluate(verbose=1)
-    # pruner.quantization()
+    if round == repeat-1:
+        pruner.quantization()
     pruner.gc()
 
     round += 1

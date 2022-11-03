@@ -30,7 +30,7 @@ class Sampler:
         Args:
         mode: The mode of sampling strategy (optional, baseline mode by default).
             [PS] 3 modes are supported in the Alpha release, refer to the ``paoding.utility.option.SamplingMode`` for the technical definition.
-        params: The tuple of parameters (for greedy and stochastic modes only) (optional, (0.75, 0.25) by default).
+        params: The tuple of parameters (for impact-based and stochastic modes only) (optional, (0.75, 0.25) by default).
         """
         self.mode = mode
         self.mode_conv = SamplingMode.SCALE
@@ -76,8 +76,8 @@ class Sampler:
                         for pair in pairs:
                             count_pairs_pruned_curr_epoch += 1
 
-        elif self.mode == SamplingMode.GREEDY:
-            result = pruning.pruning_greedy(model, big_map, prune_percentage,
+        elif self.mode == SamplingMode.IMPACT:
+            result = pruning.pruning_impact_based(model, big_map, prune_percentage,
                                             cumulative_impact_intervals,
                                             pooling_multiplier,
                                             neurons_manipulated,
