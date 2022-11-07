@@ -45,8 +45,9 @@ class Pruner:
     hi_bound = 1
 
     stepwise_cnn_pruning = False
+    batch_size = None
 
-    def __init__(self, path, test_set=None, target=0.5, step=0.025, sample_strategy=None, input_interval=(0, 1), model_type=ModelType.XRAY, seed_val=None, stepwise_cnn_pruning=False, surgery_mode=False):
+    def __init__(self, path, test_set=None, target=0.5, step=0.025, sample_strategy=None, input_interval=(0, 1), model_type=ModelType.XRAY, seed_val=None, stepwise_cnn_pruning=False, surgery_mode=False, batch_size=None):
         """
         Initializes `Pruner` class.
         Args:
@@ -94,6 +95,7 @@ class Pruner:
         self.stepwise_cnn_pruning = stepwise_cnn_pruning
 
         self.surgery_mode = surgery_mode
+        self.batch_size = batch_size
 
         self.print_welcome_header()
 
@@ -139,6 +141,8 @@ class Pruner:
         Returns:
         A tuple of loss and accuracy values
         """
+        if batch_size is None:
+            batch_size = self.batch_size
         if self.test_set is None:
             print("Test set not provided, evaluation aborted...")
             return 0, 0
@@ -179,7 +183,8 @@ class Pruner:
         tflite_model_fp16_file = tflite_models_dir/model_filename_f16
         tflite_model_fp16_file.write_bytes(tflite_fp16_model)
         print(" >> Size after quantization:",
-              os.path.getsize(tflite_model_fp16_file))
+              os.path.getsize(tflite_model_fp16_file), 
+              "at", os.path.join(tflite_models_dir, model_filename_f16))
 
     def prune(self, evaluator=None, save_file=False, pruned_model_path=None, verbose=0, model_name=None):
         """

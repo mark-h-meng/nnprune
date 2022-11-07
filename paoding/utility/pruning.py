@@ -687,7 +687,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
             else:
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
-            bar.printprogress(dense_layers_pruned+1, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
+            bar.printprogress(dense_layers_count, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
             
             dense_layers_pruned += 1
             if verbose > 0:
@@ -740,7 +740,7 @@ def prune_one_layer(model, pruned_indexes, layer_ix):
     """Prunes one layer based on a Keras Model, layer index and indexes of filters to prune"""
     surgeon = Surgeon(model, copy=True)
     surgeon.add_job('delete_channels', model.layers[layer_ix], channels=pruned_indexes)
-    return surgeon.operate()
+    model_pruned =  surgeon.operate()
     return model_pruned
 
 def prune_multiple_layers(model, pruned_matrix):

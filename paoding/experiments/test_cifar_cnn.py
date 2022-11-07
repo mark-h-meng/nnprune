@@ -48,7 +48,7 @@ while(round<repeat):
     sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25), recursive_pruning=True)
 
     model_name = 'CIFAR'
-    target = 0.5
+    target = 0.25
     step = 0.025
 
     evaluator = Evaluator(epsilons=[0.01, 0.05], batch_size=100)

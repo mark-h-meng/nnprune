@@ -178,7 +178,7 @@ class TestPruning(unittest.TestCase):
             model_type=ModelType.CREDIT,
             seed_val=42)
 
-        pruner.load_model(optimizer)
+        pruner.load_model(optimizer, loss=tf.keras.losses.BinaryCrossentropy())
         pruner.prune(evaluator=None)
         pruner.save_model(pruned_model_path)
 
