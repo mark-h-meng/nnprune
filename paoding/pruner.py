@@ -16,6 +16,7 @@ from datetime import datetime
 import numpy as np
 
 # Import in-house classes
+import paoding
 from paoding.sampler import Sampler
 from paoding.evaluator import Evaluator
 from paoding.utility.option import SamplingMode, ModelType
@@ -530,7 +531,7 @@ class Pruner:
             '|     __  /_/ /  __ `/  __ \  __  /__  /__  __ \_  __ `/     |\n' +\
             '|     _  ____// /_/ // /_/ / /_/ / _  / _  / / /  /_/ /      |\n' +\
             '|     /_/     \__,_/ \____/\__,_/  /_/  /_/ /_/_\__, /       |\n' +\
-            '|                                              /____/        |\n' +\
+            '|     Ver ' + "{:<20}".format(paoding.__version__) + '                 /____/        |\n' +\
             '|============================================================|\n' +\
             '|           +-+ +-+-+-+-+-+-+-+-+-+ +-+-+-+-+-+-+            |\n' +\
             '|           |A| |D|a|t|a|-|f|r|e|e| |N|e|u|r|a|l|            |\n' +\

@@ -37,6 +37,7 @@ sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
 
 repeat = 5
 round = 0
+
 while(round<repeat):
 
     pruner = Pruner(original_model_path, 
