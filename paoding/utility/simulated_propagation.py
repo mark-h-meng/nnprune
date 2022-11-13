@@ -24,9 +24,13 @@ def calculate_bounds_of_output(model, intervals, loc):
     propagated_next_layer_interval = None
 
     while loc < num_layers - 1:
+        next_loc = next_valid_layer(model, loc)
+        if next_loc >= num_layers:
+            break
+
         # Exclude non FC layers
-        num_curr_neurons = len(w[loc + 1][0])
-        num_next_neurons = len(w[loc + 1][0][0])
+        num_curr_neurons = len(w[next_loc][0])
+        num_next_neurons = len(w[next_loc][0][0])
 
         relu_activation = g[loc]['activation'] == 'relu'
 
@@ -35,19 +39,19 @@ def calculate_bounds_of_output(model, intervals, loc):
                             num_curr_neurons, "expected, not", len(intervals))
 
         # No activation at the output layer
-        if loc + 1 == num_layers - 1:
+        if next_loc == num_layers - 1:
             propagated_next_layer_interval = ia.forward_propogation(intervals,
-                                                                    w[loc + 1][0],
-                                                                    w[loc + 1][1],
+                                                                    w[next_loc][0],
+                                                                    w[next_loc][1],
                                                                     activation=False)
         else:
             propagated_next_layer_interval = ia.forward_propogation(intervals,
-                                                                    w[loc + 1][0],
-                                                                    w[loc + 1][1],
+                                                                    w[next_loc][0],
+                                                                    w[next_loc][1],
                                                                     activation=True,
                                                                     relu_activation=relu_activation)
         intervals = propagated_next_layer_interval
-        loc += 1
+        loc = next_loc
 
     return propagated_next_layer_interval
 
@@ -70,8 +74,9 @@ def calculate_impact_of_pruning_next_layer(model, big_map, pruning_pairs, loc, c
 
     # In case there is a single unit pruning, s.t. b = -1
     #    the Delta will be -1 * (a * w_a)
+    next_loc = next_valid_layer(model, loc)
 
-    next_layer_size = len(w[loc+1][0][0])
+    next_layer_size = len(w[next_loc][0][0])
     if cumulative_next_layer_intervals is None:
         empty_interval = (0,0)
         cumulative_next_layer_intervals = [empty_interval for i in range(0, next_layer_size)]
@@ -90,13 +95,13 @@ def calculate_impact_of_pruning_next_layer(model, big_map, pruning_pairs, loc, c
 
             # approximate the result of (a-b)
             (a_minus_b_lo, a_minus_b_hi) = ia.interval_minus((a_lo, a_hi), (b_lo, b_hi))
-            w_a = w[loc + 1][0][a]
+            w_a = w[next_loc][0][a]
             if len(w_a) != next_layer_size:
                 raise Exception("Inconsistent size of parameters")
 
             impact_to_next_layer = [ia.interval_scale((a_minus_b_lo, a_minus_b_hi), k) for k in w_a]
         else:
-            w_a = w[loc + 1][0][a]
+            w_a = w[next_loc][0][a]
             if len(w_a) != next_layer_size:
                 raise Exception("Inconsistent size of parameters")
 
@@ -120,8 +125,8 @@ def get_definition_map(model, definition_dict=None, input_interval=(0, 1)):
     (w, g) = utils.load_param_and_config(model)
     num_layers = len(model.layers)
     layer_idx = 0
-    
-    # [ver 0.1.1] "starting_layer_index" and "ending_layer_index" have been deprecated since 0.1.1 and replaced by  
+
+    # [ver 0.1.1] "starting_layer_index" and "ending_layer_index" have been deprecated since 0.1.1 and replaced by
     #  the two arrays "dense_layer_indexes" and "non_dense_layer_indexes" to support non-dense layers in the middle
     #  such as dropout layers.
     '''
@@ -130,7 +135,7 @@ def get_definition_map(model, definition_dict=None, input_interval=(0, 1)):
     '''
     non_dense_layer_indexes = []
     dense_layer_indexes = []
-    
+
     while layer_idx < num_layers - 1:
         if "dense" in model.layers[layer_idx].name:
             dense_layer_indexes.append(layer_idx)
@@ -173,7 +178,7 @@ def get_definition_map(model, definition_dict=None, input_interval=(0, 1)):
         for m in range(0, num_curr_neurons):
             (sum_lo, sum_hi) = (0, 0)
             for n in range(0, num_prev_neurons):
-                
+
                 prev_dense_layer = i-1
                 if not prev_dense_layer in dense_layer_indexes:
                     prev_dense_layer -= 1
@@ -234,3 +239,15 @@ def get_definition_interval(unit_index, layer_index, parameters, relu_activation
             sum_lo = 1 / (1 + math.exp(-1 * sum_lo))
         return (sum_lo, sum_hi)
     return None
+
+
+def next_valid_layer(model, layer_idx):
+    next_idx = layer_idx + 1
+
+    while next_idx < len(model.layers):
+        if "dropout" in model.layers[next_idx].name:
+            next_idx += 1
+            continue
+        break
+
+    return next_idx

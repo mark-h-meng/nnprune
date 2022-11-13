@@ -22,7 +22,7 @@ def encode_numeric_zscore(df, name, mean=None, sd=None):
         sd = df[name].std()
 
     df[name] = (df[name] - mean) / sd
-    
+
 # Dummy encoding for categorical variables ([1,0],[0,1],[0,0] for 'Red', 'Green' and 'Blue')
 def encode_text_dummy(df, name):
     dummies = pd.get_dummies(df[name])
@@ -66,10 +66,10 @@ def train_kdd99_5_layer_mlp(train_data, test_data, path, overwrite=False,
         model.add(layers.Dense(23, activation='softmax'))
 
         print(model.summary())
-        
+
         # model.compile(optimizer=optimizer_config, loss=tf.keras.losses.BinaryCrossentropy(), metrics=['acc'])
         model.compile(optimizer=optimizer_config, loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
-                      
+
         training_history = model.fit(train_features, train_labels,
                                      batch_size=BATCH_SIZE,
                                      epochs=epochs,
@@ -118,22 +118,22 @@ def train_kdd99_7_layer_mlp(train_data, test_data, path, overwrite=False,
 
         model = models.Sequential()
         model.add(layers.Dense(512, activation='relu', input_shape=(train_features.shape[-1],)))
-        #model.add(layers.Dropout(0.5))
+        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(256, activation='relu'))
-        #model.add(layers.Dropout(0.5))
+        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(128, activation='relu'))
-        #model.add(layers.Dropout(0.5))
+        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(64, activation='relu'))
-        #model.add(layers.Dropout(0.5))
+        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(32, activation='relu'))
-        #model.add(layers.Dropout(0.5))
+        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(23, activation='softmax'))
 
         print(model.summary())
-        
+
         # model.compile(optimizer=optimizer_config, loss=tf.keras.losses.BinaryCrossentropy(), metrics=['acc'])
         model.compile(optimizer=optimizer_config, loss=tf.keras.losses.CategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
-                      
+
         training_history = model.fit(train_features, train_labels,
                                      batch_size=BATCH_SIZE,
                                      epochs=epochs,
@@ -167,7 +167,7 @@ data = pd.read_csv(data_path, header=None)
 
 # Full description please refer to http://kdd.ics.uci.edu/databases/kddcup99/task.html
 data.columns = [
-    'duration', # length (number of seconds) of the connection, range [0, 58329] 
+    'duration', # length (number of seconds) of the connection, range [0, 58329]
     'protocol_type', # TCP, UDP, ICMP
     'service', # Service type of the target machine, 70 types 'http_443', 'http_8001', 'imap4', etc
     'flag', # Status of connection in 11 types such as 'S0', 'S1' and 'S2', etc.
@@ -207,7 +207,7 @@ data.columns = [
     'dst_host_serror_rate', # range [0.00,1.00]
     'dst_host_srv_serror_rate', # range [0.00,1.00]
     'dst_host_rerror_rate', # range [0.00,1.00]
-    'dst_host_srv_rerror_rate', # range [0.00,1.00] 
+    'dst_host_srv_rerror_rate', # range [0.00,1.00]
     'outcome' # Tag
 ]
 
@@ -263,7 +263,7 @@ data.dropna(inplace=True, axis=1)
 # The first 41 columns are used as "x", and the last column is "y"
 x_columns = data.columns.drop('outcome')
 X = data[x_columns].values
-dummies = pd.get_dummies(data['outcome']) 
+dummies = pd.get_dummies(data['outcome'])
 outcomes = dummies.columns
 num_classes = len(outcomes)
 Y = dummies.values
@@ -293,7 +293,7 @@ while(round<repeat):
 
     target = 0.5
     step = 0.03125
-   
+
 
     pruner = Pruner(model_path,
                 (x_test, y_test),
@@ -301,7 +301,7 @@ while(round<repeat):
                 step=step,
                 sample_strategy=sampler,
                 model_type=ModelType.KDD,
-                stepwise_cnn_pruning=True, 
+                stepwise_cnn_pruning=True,
                 #seed_val=42,
                 surgery_mode=True)
 
