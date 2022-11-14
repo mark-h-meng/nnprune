@@ -780,7 +780,7 @@ def next_valid_layer(model, layer_idx):
     next_idx = layer_idx + 1
 
     while next_idx < len(model.layers):
-        if "dropout" in model.layers[next_idx].name:
+        if "dropout" in model.layers[next_idx].name or "normalization" in model.layers[next_idx].name:
             next_idx += 1
             continue
         break
