@@ -82,7 +82,10 @@ pruner.load_model(optimizer=optimizer, loss=loss_fn)
 pruned_model_path = model_path + "_pruned"
 
 # perform pruning, and you will be able to find the pruned model saved at the designated path
-pruner.prune(evaluator=evaluator, pruned_model_path=pruned_model_path, model_name='MNIST', save_file=True)
+pruner.prune(evaluator=evaluator, 
+    pruned_model_path=pruned_model_path, 
+    model_name='MNIST', 
+    save_file=True)
 ```
 
 You may also run the test cases given in the package to quicky go through the pruning process. The class "test_prunner" will firstly train a few sample models, then perform pruning in different modes, followed by robustness evaluation for selected pruned models. The entire demonstration may spend a few minutes to finish, depending on the computation power of the machine. Some screenshots below depicts the testing process.

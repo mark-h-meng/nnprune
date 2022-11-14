@@ -1,8 +1,8 @@
 from setuptools import setup, find_packages
 import platform
 
-VERSION = '1.0.0.post2'
-DESCRIPTION = 'Stochastic data-free robustness preserving neural network pruning'
+VERSION = '1.0.0.post3'
+DESCRIPTION = 'PAODING-DL: A Data-free Robustness-preserving Neural Network Pruning Toolkit'
 
 with open("README.md", "r", encoding="utf-8") as fh:
     LONG_DESCRIPTION = fh.read()
