@@ -488,10 +488,12 @@ def train_mnist_cnn(train_data, test_data, path, overwrite=False, use_relu=True,
         model.add(layers.MaxPooling2D(pool_size=(2,2)))
 
         model.add(layers.Conv2D(filters=256, kernel_size = (3,3), activation="relu"))
+        model.add(layers.BatchNormalization())
         model.add(layers.MaxPooling2D(pool_size=(2,2)))
 
         model.add(layers.Flatten())
         model.add(layers.Dense(512, activation='relu'))
+        model.add(layers.Dropout(0.25))
         model.add(layers.Dense(128, activation='relu'))
         model.add(layers.Dense(10, activation='softmax'))
 
