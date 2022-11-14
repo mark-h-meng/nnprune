@@ -41,17 +41,23 @@ def pruning_baseline(model, big_map, prune_percentage=None,
         saliency_matrix = []
 
     while layer_idx < num_layers - 1:
-        pruned_pairs.append([])
-        if len(neurons_manipulated) < layer_idx+1:
-            neurons_manipulated.append([])
-        saliency_matrix.append(None)
+        next_layer_idx = next_valid_layer(model, layer_idx)
+        if next_layer_idx >= num_layers:
+            break
+
+        for _ in range(next_layer_idx - layer_idx):
+            pruned_pairs.append([])
+            if len(neurons_manipulated) < next_layer_idx:
+                neurons_manipulated.append([])
+            saliency_matrix.append(None)
         # Exclude non FC layers
+
         if "dense" in model.layers[layer_idx].name:
             # print("Pruning Operation Looking at Layer", layer_idx)
 
             num_prev_neurons = len(w[layer_idx][0])
             num_curr_neurons = len(w[layer_idx][0][0])
-            num_next_neurons = len(w[layer_idx + 1][0][0])
+            num_next_neurons = len(w[next_layer_idx][0][0])
 
             # curr_weights_neuron_as_rows records the weights parameters originating from the prev layer
             curr_weights_neuron_as_rows = np.zeros(
@@ -62,7 +68,7 @@ def pruning_baseline(model, big_map, prune_percentage=None,
                         idx_neuron]
 
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
-            next_weights_neuron_as_rows = w[layer_idx + 1][0]
+            next_weights_neuron_as_rows = w[next_layer_idx][0]
 
             if saliency_matrix[layer_idx] is None:
 
@@ -79,7 +85,7 @@ def pruning_baseline(model, big_map, prune_percentage=None,
                                                                                 next_weights_neuron_as_rows)
             else:
                 if verbose > 0:
-                    print(" [DEBUG] Skip building saliency matrix: saliency matrix for layer", 
+                    print(" [DEBUG] Skip building saliency matrix: saliency matrix for layer",
                         layer_idx, "exists.")
 
             import pandas as pd
@@ -108,7 +114,7 @@ def pruning_baseline(model, big_map, prune_percentage=None,
             for idx_candidate, pruning_candidate in enumerate(top_candidates):
                 # Extract the indexes of pruning nodes as a tuple (corr. score is no longer useful since this step)
                 (node_a, node_b) = pruning_candidate.index.values[0]
-                ''' 
+                '''
                 # CHANGE on Commit db9c736, to make it consistent with paper
                 # To standarise the pruning operation for the same pair: we always prune the node with smaller index off
                 if node_a > node_b:
@@ -120,11 +126,10 @@ def pruning_baseline(model, big_map, prune_percentage=None,
 
                 # Change all weight connecting from node_a to the next layers as the sum of node_a and node_b's ones
                 #    & Reset all weight connecting from node_b to ZEROs
-                # RECALL: next_weights_neuron_as_rows = w[layer_idx+1][0] ([0] for weight and [1] for bias)
+                # RECALL: next_weights_neuron_as_rows = w[next_layer_idx][0] ([0] for weight and [1] for bias)
                 for i in range(0, num_next_neurons):
-                    w[layer_idx + 1][0][node_a][i] = w[layer_idx +
-                                                       1][0][node_b][i] + w[layer_idx + 1][0][node_a][i]
-                    w[layer_idx + 1][0][node_b][i] = 0
+                    w[next_layer_idx][0][node_a][i] = w[next_layer_idx][0][node_b][i] + w[next_layer_idx][0][node_a][i]
+                    w[next_layer_idx][0][node_b][i] = 0
                 total_pruned_count += 1
 
                 # If recursive mode is enabled, the affected neuron (node_a) in the current epoch still
@@ -135,16 +140,16 @@ def pruning_baseline(model, big_map, prune_percentage=None,
                         neurons_manipulated[layer_idx].remove(node_a)
 
             # Save the modified parameters to the model
-            model.layers[layer_idx + 1].set_weights(w[layer_idx + 1])
+            model.layers[next_layer_idx].set_weights(w[next_layer_idx])
 
             pruned_pairs[layer_idx].extend(pruning_pairs_curr_layer_baseline)
-        layer_idx += 1
+        layer_idx = next_layer_idx
     if verbose > 0:
         print("Pruning accomplished -", total_pruned_count, "units have been pruned")
     return model, neurons_manipulated, pruned_pairs, saliency_matrix
 
 
-# Our impact based method 
+# Our impact based method
 def pruning_impact_based(model, big_map, prune_percentage,
                    cumulative_impact_intervals,
                    pooling_multiplier=2,
@@ -168,7 +173,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
         neurons_manipulated = []
 
     e_ij_matrix = []
-    
+
     # Here we do a quick calculation of how many dense layers to process
     dense_layers_count = 0
     for layer in model.layers[:-1]:
@@ -179,14 +184,18 @@ def pruning_impact_based(model, big_map, prune_percentage,
     bar.printprogress(dense_layers_pruned, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
 
     while layer_idx < num_layers - 1:
+        next_layer_idx = next_valid_layer(model, layer_idx)
+        if next_layer_idx >= num_layers:
+            break
 
         cumul_impact_ints_curr_layer = None
 
-        pruned_pairs.append([])
-        if len(neurons_manipulated) < layer_idx+1:
-            neurons_manipulated.append([])
-        e_ij_matrix.append(None)
-        pruning_pairs_dict_overall_scores.append(None)
+        for _ in range(next_layer_idx - layer_idx):
+            pruned_pairs.append([])
+            if len(neurons_manipulated) < next_layer_idx:
+                neurons_manipulated.append([])
+            e_ij_matrix.append(None)
+            pruning_pairs_dict_overall_scores.append(None)
 
         # Exclude non FC layers
         if "dense" in model.layers[layer_idx].name:
@@ -194,7 +203,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
 
             num_prev_neurons = len(w[layer_idx][0])
             num_curr_neurons = len(w[layer_idx][0][0])
-            num_next_neurons = len(w[layer_idx + 1][0][0])
+            num_next_neurons = len(w[next_layer_idx][0][0])
 
             # curr_weights_neuron_as_rows records the weights parameters originating from the prev layer
             curr_weights_neuron_as_rows = np.zeros(
@@ -205,7 +214,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
                         idx_neuron]
 
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
-            next_weights_neuron_as_rows = w[layer_idx + 1][0]
+            next_weights_neuron_as_rows = w[next_layer_idx][0]
 
             if verbose > 0:
                 print(" [DEBUG] Building saliency matrix for layer " +
@@ -273,7 +282,7 @@ def pruning_impact_based(model, big_map, prune_percentage,
 
                 pruning_impact_as_interval_output_layer = simprop.calculate_bounds_of_output(model,
                                                                                              pruning_impact_as_interval_next_layer,
-                                                                                             layer_idx + 1)
+                                                                                             next_layer_idx)
 
                 big_L = utils.l1_norm_of_intervals(
                     pruning_impact_as_interval_output_layer)
@@ -332,12 +341,12 @@ def pruning_impact_based(model, big_map, prune_percentage,
 
             if cumulative_impact_intervals is None:
                 cumulative_impact_intervals = simprop.calculate_bounds_of_output(
-                    model, cumul_impact_ints_curr_layer, layer_idx+1)
+                    model, cumul_impact_ints_curr_layer, next_layer_idx)
             else:
                 cumulative_impact_intervals = ia.interval_list_add(cumulative_impact_intervals,
                                                                    simprop.calculate_bounds_of_output(model,
                                                                                                       cumul_impact_ints_curr_layer,
-                                                                                                      layer_idx+1))
+                                                                                                      next_layer_idx))
 
             if verbose > 0:
                 print(" >> DEBUG: len(cumulative_impact_curr_layer_pruning_to_next_layer):", len(
@@ -349,14 +358,13 @@ def pruning_impact_based(model, big_map, prune_percentage,
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
                 # Change all weight connecting from node_b to the next layers as the sum of node_a and node_b's ones
                 #    & Reset all weight connecting from node_a to ZEROs
-                # RECALL: next_weights_neuron_as_rows = w[layer_idx+1][0] ([0] for weight and [1] for bias)
+                # RECALL: next_weights_neuron_as_rows = w[next_layer_idx][0] ([0] for weight and [1] for bias)
                 for i in range(0, num_next_neurons):
-                    w[layer_idx + 1][0][node_a][i] = w[layer_idx +
-                                                       1][0][node_b][i] + w[layer_idx + 1][0][node_a][i]
-                    w[layer_idx + 1][0][node_b][i] = 0
+                    w[next_layer_idx][0][node_a][i] = w[next_layer_idx][0][node_b][i] + w[next_layer_idx][0][node_a][i]
+                    w[next_layer_idx][0][node_b][i] = 0
                 total_pruned_count += 1
             # Save the modified parameters to the model
-            model.layers[layer_idx + 1].set_weights(w[layer_idx + 1])
+            model.layers[next_layer_idx].set_weights(w[next_layer_idx])
 
             pruned_pairs[layer_idx].extend(pruning_pairs_curr_layer_confirmed)
 
@@ -367,14 +375,14 @@ def pruning_impact_based(model, big_map, prune_percentage,
             else:
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
-            
+
             bar.printprogress(dense_layers_pruned+1, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
             if verbose>0:
                 print("Pruning layer #", layer_idx,
                     "completed, updating definition hash map...")
             # TEMP IMPLEMENTATION ENDS HERE
             dense_layers_pruned += 1
-        layer_idx += 1
+        layer_idx = next_layer_idx
     bar.finish()
     if verbose > 0:
         print(" [DEBUG] Size of cumulative impact total",
@@ -419,27 +427,30 @@ def pruning_stochastic(model, big_map, prune_percentage,
     bar.printprogress(dense_layers_pruned, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Task launched', length = 50)
 
     while layer_idx < num_layers - 1:
+        next_layer_idx = next_valid_layer(model, layer_idx)
+        if next_layer_idx >= num_layers:
+            break
 
         cumul_impact_ints_curr_layer = None
 
-        pruned_pairs.append([])
+        for _ in range(next_layer_idx - layer_idx):
+            pruned_pairs.append([])
 
-        if len(neurons_manipulated) < layer_idx + 1:
-            neurons_manipulated.append([])
-        if len(target_scores) < layer_idx + 1:
-            target_scores.append(-1)
+            if len(neurons_manipulated) < next_layer_idx:
+                neurons_manipulated.append([])
+            if len(target_scores) < next_layer_idx:
+                target_scores.append(-1)
 
-        e_ij_matrix.append(None)
-        pruning_pairs_dict_overall_scores.append(None)
+            e_ij_matrix.append(None)
+            pruning_pairs_dict_overall_scores.append(None)
 
-        
         # Exclude non FC layers
         if "dense" in model.layers[layer_idx].name:
             # print("Pruning Operation Looking at Layer", layer_idx)
 
             num_prev_neurons = len(w[layer_idx][0])
             num_curr_neurons = len(w[layer_idx][0][0])
-            num_next_neurons = len(w[layer_idx + 1][0][0])
+            num_next_neurons = len(w[next_layer_idx][0][0])
 
             # curr_weights_neuron_as_rows records the weights parameters originating from the prev layer
             curr_weights_neuron_as_rows = np.zeros(
@@ -450,7 +461,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
                         idx_neuron]
 
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
-            next_weights_neuron_as_rows = w[layer_idx + 1][0]
+            next_weights_neuron_as_rows = w[next_layer_idx][0]
 
             bar.printprogress(dense_layers_pruned+0.1, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Build saliency matrix for layer ' + str(layer_idx), length = 50)
 
@@ -468,7 +479,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
             import pandas as pd
             df = pd.DataFrame(data=e_ij_matrix[layer_idx])
-            
+
             bar.printprogress(dense_layers_pruned+0.2, dense_layers_count-1, prefix = 'Pruning Dense:', suffix = 'Build saliency matrix for layer ' + str(layer_idx), length = 50)
 
             # find the candidates neuron to be pruned according to the saliency
@@ -527,7 +538,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
                         pruning_impact_as_interval_output_layer = simprop.calculate_bounds_of_output(model,
                                                                                                      pruning_impact_as_interval_next_layer,
-                                                                                                     layer_idx + 1)
+                                                                                                     next_layer_idx)
 
                         big_L = utils.l1_norm_of_intervals(
                             pruning_impact_as_interval_output_layer)
@@ -563,7 +574,7 @@ def pruning_stochastic(model, big_map, prune_percentage,
                             count += 1
                             pruning_pairs_dict_overall_scores[layer_idx][(
                                 node_a, node_b)] = target_scores[layer_idx]
-                            
+
                             if verbose > 0:
                                 print(" [DEBUG]", bcolors.OKGREEN, "Accepting",
                                     bcolors.ENDC, (node_a, node_b), curr_score)
@@ -643,40 +654,39 @@ def pruning_stochastic(model, big_map, prune_percentage,
 
             if cumulative_impact_intervals is None:
                 cumulative_impact_intervals = simprop.calculate_bounds_of_output(
-                    model, cumul_impact_ints_curr_layer, layer_idx+1)
+                    model, cumul_impact_ints_curr_layer, next_layer_idx)
             else:
                 cumulative_impact_intervals = ia.interval_list_add(cumulative_impact_intervals,
                                                                    simprop.calculate_bounds_of_output(model,
                                                                                                       cumul_impact_ints_curr_layer,
-                                                                                                      layer_idx+1))
+                                                                                                      next_layer_idx))
 
             # Now let's do pruning (simulated, by zeroing out weights but keeping neurons in the network)
-            ## You can set the pruning configuration to (really) cut the unit off from the model, but not at this stage, 
-            ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting 
+            ## You can set the pruning configuration to (really) cut the unit off from the model, but not at this stage,
+            ##   because we still need to retain the size of each layer for upcoming iteration of sampling. The cutting
             ##   operation will be perform at the end, if enabled.
-            
-            bar.printprogress(dense_layers_pruned+0.9, dense_layers_count, prefix = 'Pruning Dense:', 
+
+            bar.printprogress(dense_layers_pruned+0.9, dense_layers_count, prefix = 'Pruning Dense:',
                 suffix = 'Complete layer ' + str(layer_idx) + " (" + model.layers[layer_idx].name + ')', length = 50)
             output_str = " >>> Pruning layer " + str(layer_idx) + " (" + model.layers[layer_idx].name + "): ["
             output_str_prune_items = []
             for (node_a, node_b) in pruning_pairs_curr_layer_confirmed:
                 # Change all weight connecting from node_b to the next layers as the sum of node_a and node_b's ones
                 #    & Reset all weight connecting from node_a to ZEROs
-                # RECALL: next_weights_neuron_as_rows = w[layer_idx+1][0] ([0] for weight and [1] for bias)
+                # RECALL: next_weights_neuron_as_rows = w[next_layer_idx][0] ([0] for weight and [1] for bias)
                 output_str_prune_items.append(str(node_b) + "->" + str(node_a))
                 for i in range(0, num_next_neurons):
-                    w[layer_idx + 1][0][node_a][i] = w[layer_idx +
-                                                       1][0][node_b][i] + w[layer_idx + 1][0][node_a][i]
-                    w[layer_idx + 1][0][node_b][i] = 0
+                    w[next_layer_idx][0][node_a][i] = w[next_layer_idx][0][node_b][i] + w[next_layer_idx][0][node_a][i]
+                    w[next_layer_idx][0][node_b][i] = 0
                 total_pruned_count += 1
             output_str += ",".join(output_str_prune_items)
             output_str += "]"
-            
+
             if verbose > 0:
                 print(output_str)
-            
+
             # Save the modified parameters to the model
-            model.layers[layer_idx + 1].set_weights(w[layer_idx + 1])
+            model.layers[next_layer_idx].set_weights(w[next_layer_idx])
 
             pruned_pairs[layer_idx].extend(pruning_pairs_curr_layer_confirmed)
 
@@ -688,14 +698,14 @@ def pruning_stochastic(model, big_map, prune_percentage,
                 big_map = simprop.get_definition_map(
                     model, definition_dict=big_map, input_interval=(-5, 5))
             bar.printprogress(dense_layers_count, dense_layers_count, prefix = 'Pruning Dense:', suffix = 'Complete', length = 50)
-            
+
             dense_layers_pruned += 1
             if verbose > 0:
                 print("Pruning layer #", layer_idx,
                   "completed, updating definition hash map...")
-            
-        layer_idx += 1
-    
+
+        layer_idx = next_layer_idx
+
     bar.finish()
     if verbose > 0:
         print(" [DEBUG] size of cumulative impact total",
@@ -707,13 +717,13 @@ def pruning_stochastic(model, big_map, prune_percentage,
 def pruning_conv_scale(model, prune_percentage, layer=None, layer_wise_sampling=1):
     # TO-DO: n_pruned need to be calculated, currently we only use layer wise mode
     n_pruned = 5
-    
+
     to_prune = []
 
     if layer or layer==0:
         norms, size = utils.get_filters_l1(model,layer)
         to_prune = np.argsort(norms)[:n_pruned]
-    
+
     elif layer_wise_sampling:
         norms, size = utils.get_filters_l1(model)
         if norms is None:
@@ -723,7 +733,7 @@ def pruning_conv_scale(model, prune_percentage, layer=None, layer_wise_sampling=
         for i in size:
             N.append(math.ceil(i*prune_percentage))
         to_prune = utils.smallest_indices_layerwise(norms, N)
-                       
+
     else:
         norms, size = utils.get_filters_l1(model)
         # print(" ++++ The l1 norms are:", norms)
@@ -755,12 +765,24 @@ def prune_multiple_layers(model, pruned_matrix):
         # print(" +++ PRUNING LAYER", layer_ix, model.layers[layer_ix].name)
         pruned_filters = [x[1] for x in to_prune if x[0]==layer_ix]
         pruned_layer = model.layers[layer_ix]
-        bar.printprogress(index, len(layers_to_prune)-1, prefix = 'Pruning Conv2D:', 
+        bar.printprogress(index, len(layers_to_prune)-1, prefix = 'Pruning Conv2D:',
             suffix = 'Complete.', length = 50)
         #print(" >>> Prunning layer", layer_ix, "(" + model.layers[layer_ix].name + "):", pruned_filters)
         surgeon.add_job('delete_channels', pruned_layer, channels=pruned_filters)
-    
+
     bar.finish()
     model_pruned = surgeon.operate()
-    
+
     return model_pruned
+
+
+def next_valid_layer(model, layer_idx):
+    next_idx = layer_idx + 1
+
+    while next_idx < len(model.layers):
+        if "dropout" in model.layers[next_idx].name or "normalization" in model.layers[next_idx].name:
+            next_idx += 1
+            continue
+        break
+
+    return next_idx
