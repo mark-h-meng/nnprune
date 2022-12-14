@@ -1,3 +1,5 @@
 data/
+# We keep kdd-cup dataset because the access of that dataset is unstable 
+!data/kdd-cup/
 models/
 logs/
