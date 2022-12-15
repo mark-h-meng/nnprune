@@ -1,0 +1,7 @@
+{
+    // Modify PYTHONPATH to add current folder
+"terminal.integrated.env.linux": {
+    "PYTHONPATH": "${workspaceFolder}"
+}
+}
+

@@ -159,6 +159,7 @@ def train_kdd99_7_layer_mlp(train_data, test_data, path, overwrite=False,
 # Hide GPU from visible devices
 tf.config.set_visible_devices([], 'GPU')
 
+# The original dataset can be found at https://archive.ics.uci.edu/ml/datasets/kdd+cup+1999+data
 data_path = 'paoding/experiments/data/kdd-cup/kddcup.data_10_percent_corrected'
 model_path = 'paoding/experiments/models/kddcup-fc'
 
