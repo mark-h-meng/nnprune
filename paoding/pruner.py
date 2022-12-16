@@ -252,7 +252,7 @@ class Pruner:
         while (not stop_condition):
 
             if include_cnn_per_step:
-                pruned_model_path_conv = self.model_path + "conv_pruned"
+                pruned_model_path_conv = self.model_path + "_conv_pruned"
                 self.model = self.prune_cnv_step(
                     None, save_file=True, pruned_model_path=pruned_model_path_conv, verbose=1)
                 self.model = tf.keras.models.load_model(pruned_model_path_conv)
@@ -347,11 +347,14 @@ class Pruner:
                 accuracy_board.append((round(loss, 4), round(accuracy, 4)))
 
                 tape_of_moves.append(pruned_pairs)
+            
             # Check if have pruned enough number of hidden units
-            if self.sampler.mode == SamplingMode.BASELINE and percentage_been_pruned >= 0.5:
+            
+            if self.sampler.recursive_pruning == False and percentage_been_pruned >= 0.5:
                 print(" >> Maximum pruning percentage has been reached")
                 stop_condition = True
-            elif not stop_condition and percentage_been_pruned >= self.pruning_target:
+            
+            if not stop_condition and percentage_been_pruned >= self.pruning_target:
                 print(" >> Target pruning percentage has been reached")
                 stop_condition = True
 
@@ -380,7 +383,7 @@ class Pruner:
 
         if os.path.exists(tape_filename):
             os.remove(tape_filename)
-
+            
         with open(tape_filename, 'w+', newline='') as csv_file:
             csv_writer = csv.writer(csv_file, delimiter=',')
             if evaluator is not None:
@@ -397,8 +400,18 @@ class Pruner:
                     for k in self.target_adv_epsilons:
                         rob_pres_stat.append(rob_res[k])
 
-                rob_pres_stat.append(tape_of_moves[index])
-                rob_pres_stat.append(accuracy_board[index])
+                for layer_index, move_per_layer in enumerate(tape_of_moves[index]):
+                    move_num_str = ''
+                    if layer_index == 0:
+                        move_num_str += '['
+                    move_num_str += str(len(move_per_layer))
+                    if layer_index == len(tape_of_moves[index]) - 1:
+                        move_num_str += ']'
+                    rob_pres_stat.append(move_num_str)
+                
+                (acc_temp, loss_temp) = accuracy_board[index]
+                rob_pres_stat.append(acc_temp)
+                rob_pres_stat.append(loss_temp)
                 csv_writer.writerow(rob_pres_stat)
 
             if evaluator is None:

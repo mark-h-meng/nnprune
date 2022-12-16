@@ -36,7 +36,8 @@ setup(
         'opencv-python>=4.5'
         'numpy',
         'tabulate',
-        'pydot'
+        'pydot',
+        'graphviz'
     ],
 
     keywords=['python', 'neural network pruning'],

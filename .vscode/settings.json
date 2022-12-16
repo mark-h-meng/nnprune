@@ -2,6 +2,8 @@
     // Modify PYTHONPATH to add current folder
 "terminal.integrated.env.linux": {
     "PYTHONPATH": "${workspaceFolder}"
-}
+},
+"code-runner.cwd": "/home/mark/projects/nnprune/",
+"code-runner.fileDirectoryAsCwd": true
 }
 

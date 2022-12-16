@@ -118,15 +118,10 @@ def train_kdd99_7_layer_mlp(train_data, test_data, path, overwrite=False,
 
         model = models.Sequential()
         model.add(layers.Dense(512, activation='relu', input_shape=(train_features.shape[-1],)))
-        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(256, activation='relu'))
-        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(128, activation='relu'))
-        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(64, activation='relu'))
-        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(32, activation='relu'))
-        model.add(layers.Dropout(0.5))
         model.add(layers.Dense(23, activation='softmax'))
 
         print(model.summary())
@@ -277,41 +272,51 @@ train_features, val_features, train_labels, val_labels = train_test_split(x_trai
                                                                               test_size=0.2, train_size=0.8)
 
 repeat = 1
-round = 0
-while(round<repeat):
+test_modes=[SamplingMode.BASELINE, SamplingMode.BASELINE, SamplingMode.IMPACT]
+recursive_modes=[False, True, True]
 
-    if not LARGE_MODEL:
-        train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
-                                optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                                epochs=10)
+for index, prune_mode in enumerate(test_modes):
+    round = 0
+    if prune_mode==SamplingMode.BASELINE:
+        total_runs = 1 
     else:
-        train_kdd99_7_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
-                                optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
-                                epochs=10)
+        total_runs = repeat
 
-    sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.IMPACT, recursive_pruning=True)
+    while(round < total_runs):
 
-    target = 0.5
-    step = 0.03125
+        if not LARGE_MODEL:
+            train_kdd99_5_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
+                                    optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                                    epochs=10)
+        else:
+            train_kdd99_7_layer_mlp((x_train, y_train), (x_test, y_test), model_path, overwrite=False,
+                                    optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001),
+                                    epochs=10)
+
+        sampler = Sampler()
+        sampler.set_strategy(mode=prune_mode, recursive_pruning=recursive_modes[index])
+
+        if recursive_modes[index]:
+            target = 0.75
+        else:
+            target = 0.5
+        step = 0.03125
 
 
-    pruner = Pruner(model_path,
-                (x_test, y_test),
-                target=target,
-                step=step,
-                sample_strategy=sampler,
-                model_type=ModelType.KDD,
-                stepwise_cnn_pruning=True,
-                #seed_val=42,
-                surgery_mode=True)
+        pruner = Pruner(model_path,
+                    (x_test, y_test),
+                    target=target,
+                    step=step,
+                    sample_strategy=sampler,
+                    model_type=ModelType.KDD,
+                    stepwise_cnn_pruning=True,
+                    #seed_val=42,
+                    surgery_mode=True)
 
-    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
+        pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
 
-    pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
+        pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-    if round == repeat-1:
-        pruner.quantization()
-    pruner.gc()
+        pruner.gc()
 
-    round += 1
+        round += 1
