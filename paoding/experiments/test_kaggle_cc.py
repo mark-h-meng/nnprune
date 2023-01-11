@@ -33,7 +33,7 @@ model_name = "CREDIT"
 pruned_model_path = 'paoding/models/kaggle_mlp_3_layer_pruned'
 
 sampler = Sampler()
-sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
+sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25), recursive_pruning=False)
 
 repeat = 1
 round = 0
@@ -42,7 +42,7 @@ while(round<repeat):
 
     pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
-            target=0.8,
+            target=0.5,
             step=0.025,
             sample_strategy=sampler,  
             input_interval=(-5,5),
