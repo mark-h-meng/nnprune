@@ -44,19 +44,19 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
             layers.MaxPooling2D(pool_size=(2,2)),
             #layers.Dropout(.2),
             
-            layers.Conv2D(128,kernel_size=filter_size,activation='relu'),
+            #layers.Conv2D(128,kernel_size=filter_size,activation='relu'),
             #layers.BatchNormalization(),
-            layers.MaxPooling2D(pool_size=(2,2)),
+            #layers.MaxPooling2D(pool_size=(2,2)),
             #layers.Dropout(.2),
 
-            layers.Conv2D(256,kernel_size=filter_size,activation='relu'),
+            #layers.Conv2D(256,kernel_size=filter_size,activation='relu'),
             #layers.BatchNormalization(),
-            layers.MaxPooling2D(pool_size=(2,2)),
+            #layers.MaxPooling2D(pool_size=(2,2)),
             #layers.Dropout(.2),
-                        
+            
             layers.Flatten(),
-            layers.Dense(512,activation='relu'),
-            layers.Dense(128,activation='relu'),            
+            layers.Dense(128,activation='relu'),
+            layers.Dense(64,activation='relu'),            
             layers.Dense(4,activation='softmax')
         ])
         print(model.summary())
@@ -68,7 +68,7 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
 
         training_history = model.fit(train_data,
             epochs=epochs,
-            callbacks=[model_es, model_rlr],
+            #callbacks=[model_es, model_rlr],
             validation_data=test_data)
 
         baseline_results = model.evaluate(test_data, verbose=0)
@@ -89,7 +89,7 @@ def train_brain_cnn(train_data, test_data, path, overwrite=False,
 
 
 # Hide GPU from visible devices
-tf.config.set_visible_devices([], 'GPU')
+# tf.config.set_visible_devices([], 'GPU')
 
 locat_training="paoding/experiments/data/brain/Training"
 locat_testing = "paoding/experiments/data/brain/Testing"
@@ -139,7 +139,7 @@ repeat = 1
 round = 0
 while(round < repeat):
 
-    train_brain_cnn(train_generator, test_generator, model_path, overwrite=False,
+    train_brain_cnn(train_generator, test_generator, model_path, overwrite=True,
                         optimizer_config = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
                         epochs=20)
 
@@ -147,26 +147,26 @@ while(round < repeat):
     model_name = "MRI"
 
     sampler = Sampler()
-    sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
+    sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
     pruner = Pruner(model_path,
             test_generator,
-            target=0.5,
+            target=0.025,
             step=0.025,
             sample_strategy=sampler,
             model_type=ModelType.MRI,
-            stepwise_cnn_pruning=True)
+            stepwise_cnn_pruning=False)
 
-    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), 
+    pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001, decay=0.0001, clipvalue=0.5),
                         loss = 'sparse_categorical_crossentropy')
 
-    #pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
 
     pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
-    #pruner.evaluate(verbose=1)
+    pruner.evaluate(verbose=1)
 
-    if round == repeat - 1:
-        pruner.quantization()
+    #if round == repeat - 1:
+    #    pruner.quantization()
     pruner.gc()
     round += 1

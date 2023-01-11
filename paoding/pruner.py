@@ -344,7 +344,7 @@ class Pruner:
                           "] robust instances stat. " + str(robust_preservation) + bcolors.ENDC)
 
                 loss, accuracy = self.evaluate(verbose=1)
-                accuracy_board.append((round(loss, 4), round(accuracy, 4)))
+                accuracy_board.append([round(percentage_been_pruned, 4), (round(loss, 4), round(accuracy, 4))])
 
                 tape_of_moves.append(pruned_pairs)
             
@@ -376,10 +376,10 @@ class Pruner:
         if evaluator is None:
             tape_filename = tape_filename+"-BENCHMARK"
 
-        if self.sampler.mode == SamplingMode.BASELINE:
-            tape_filename += "_tape_baseline.csv"
-        else:
-            tape_filename = tape_filename + "_tape_" + self.sampler.mode.name + ".csv"
+        if self.sampler.recursive_pruning:
+            tape_filename = tape_filename + "-REC"
+            
+        tape_filename = tape_filename + "_tape_" + self.sampler.mode.name + ".csv"
 
         if os.path.exists(tape_filename):
             os.remove(tape_filename)
@@ -390,7 +390,10 @@ class Pruner:
                 csv_line = [str(eps) for eps in self.target_adv_epsilons]
             else:
                 csv_line = []
-            csv_line.append('moves,loss,accuracy')
+            csv_line.append('perc')
+            csv_line.append('moves')
+            csv_line.append('loss')
+            csv_line.append('accuracy')
             csv_writer.writerow(csv_line)
 
             for index, item in enumerate(accuracy_board):
@@ -409,7 +412,9 @@ class Pruner:
                         move_num_str += ']'
                     rob_pres_stat.append(move_num_str)
                 
-                (acc_temp, loss_temp) = accuracy_board[index]
+                percentage_of_pruning = accuracy_board[index][0]
+                (acc_temp, loss_temp) = accuracy_board[index][1]
+                rob_pres_stat.append(percentage_of_pruning)
                 rob_pres_stat.append(acc_temp)
                 rob_pres_stat.append(loss_temp)
                 csv_writer.writerow(rob_pres_stat)

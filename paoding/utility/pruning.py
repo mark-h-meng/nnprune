@@ -70,7 +70,7 @@ def pruning_baseline(model, big_map, prune_percentage=None,
             # next_weights_neuron_as_rows records the weights parameters connecting to the next layer
             next_weights_neuron_as_rows = w[next_layer_idx][0]
 
-            if saliency_matrix[layer_idx] is None:
+            if saliency_matrix[layer_idx] is None or recursive_pruning == True:
 
                 if verbose > 0:
                     print(" [DEBUG] Building saliency matrix for layer " +

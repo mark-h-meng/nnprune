@@ -50,7 +50,6 @@ class Sampler:
         prune_percentage: The goal of pruning (optional, 0.5 by default).
         neurons_manipulated: The list of hidden unit indices that have been involved in previous pruning operations (optional, None by default).
         saliency_matrix: The matrix of saliency between every hidden unit pairs, only applicable for baseline mode (optional, None by default).
-        recursive_pruning: The boolean parameter to indicate if recursive pruning is allowed (i.e., a neuron can be involved in pruning multiple times) (optional, False by default).
         cumulative_impact_intervals: The cumulative pruning impact of all previous pruning operations (optional, None by default).
         bias_aware: The boolean parameter to indicate if bias parameters to be considered in pruning (optional, False by default).
         pooling_multiplier: The sampling multiplier at each pruning epoch, only applicable for stochastic mode (optional, 2 by default).

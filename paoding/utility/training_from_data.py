@@ -527,8 +527,6 @@ def train_mnist_5_layer_mlp(train_data, test_data, path, overwrite=False, use_re
     (x, y)=train_data
     (test_images, test_labels)=test_data
 
-    train_images, val_images , train_labels, val_labels = train_test_split(x, y, test_size=0.167, train_size=0.833)
-
     # Let's start building a model
     if not os.path.exists(path) or overwrite:
         if os.path.exists(path):
@@ -549,11 +547,11 @@ def train_mnist_5_layer_mlp(train_data, test_data, path, overwrite=False, use_re
         model.add(layers.Dense(10, activation='softmax'))
 
         print(model.summary())
-        model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True),
+        model.compile(optimizer=optimizer_config, loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=False),
                       metrics=['accuracy'])
 
-        training_history = model.fit(train_images, train_labels, epochs=epochs,
-                                     validation_data=(val_images, val_labels))
+        training_history = model.fit(x, y, epochs=epochs,
+                                     validation_data=(test_images, test_labels))
 
         test_loss, test_accuracy = model.evaluate(test_images, test_labels, verbose=2)
         print("Final Accuracy achieved is: ", test_accuracy)

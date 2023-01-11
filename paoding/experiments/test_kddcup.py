@@ -272,8 +272,8 @@ train_features, val_features, train_labels, val_labels = train_test_split(x_trai
                                                                               test_size=0.2, train_size=0.8)
 
 repeat = 1
-test_modes=[SamplingMode.BASELINE, SamplingMode.BASELINE, SamplingMode.IMPACT]
-recursive_modes=[False, True, True]
+test_modes=[SamplingMode.BASELINE]
+recursive_modes=[False]
 
 for index, prune_mode in enumerate(test_modes):
     round = 0
@@ -297,7 +297,7 @@ for index, prune_mode in enumerate(test_modes):
         sampler.set_strategy(mode=prune_mode, recursive_pruning=recursive_modes[index])
 
         if recursive_modes[index]:
-            target = 0.75
+            target = 0.8
         else:
             target = 0.5
         step = 0.03125
@@ -311,10 +311,10 @@ for index, prune_mode in enumerate(test_modes):
                     model_type=ModelType.KDD,
                     stepwise_cnn_pruning=True,
                     #seed_val=42,
-                    surgery_mode=True)
+                    surgery_mode=False)
 
         pruner.load_model(optimizer = tf.keras.optimizers.Adam(learning_rate=0.001), loss = tf.keras.losses.CategoricalCrossentropy(from_logits=True))
-
+        #pruner.evaluate(verbose=1)
         pruner.prune(evaluator=None, pruned_model_path=model_path+"_pruned", model_name=model_name, save_file=True)
 
         pruner.gc()

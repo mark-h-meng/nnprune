@@ -33,29 +33,29 @@ model_name = "CREDIT"
 pruned_model_path = 'paoding/models/kaggle_mlp_3_layer_pruned'
 
 sampler = Sampler()
-sampler.set_strategy(mode=SamplingMode.IMPACT, params=(0.75, 0.25))
+sampler.set_strategy(mode=SamplingMode.STOCHASTIC, params=(0.75, 0.25))
 
-repeat = 5
+repeat = 1
 round = 0
 
 while(round<repeat):
 
     pruner = Pruner(original_model_path, 
             (test_features, test_labels), 
-            target=0.25,
+            target=0.8,
             step=0.025,
             sample_strategy=sampler,  
             input_interval=(-5,5),
             model_type=ModelType.CREDIT,
             seed_val=42,
-            surgery_mode=True,
-            batch_size=1024)
+            surgery_mode=False,
+            batch_size=64)
 
     pruner.load_model(optimizer, loss=tf.keras.losses.BinaryCrossentropy())
     pruner.prune(evaluator=None, pruned_model_path=pruned_model_path, model_name=model_name, save_file=True)
     
-    if round == repeat-1:
-        pruner.quantization()
-    pruner.gc()
+    #if round == repeat-1:
+    #    pruner.quantization()
+    #pruner.gc()
 
     round += 1
